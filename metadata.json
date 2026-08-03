@@ -1,0 +1,8 @@
+{
+  "name": "Remix Remix: Remix: LifeOS Mini",
+  "description": "A lightweight personal digital sanctuary featuring a private journal and a multi-lens Life Calendar.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

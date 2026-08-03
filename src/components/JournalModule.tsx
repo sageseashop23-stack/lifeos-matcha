@@ -169,6 +169,15 @@ export default function JournalModule({
   const [filterTag, setFilterTag] = useState<string | null>(null);
   const [filterMood, setFilterMood] = useState<string | null>(null);
 
+  const [realTime, setRealTime] = useState(new Date());
+
+  React.useEffect(() => {
+    const timer = setInterval(() => {
+      setRealTime(new Date());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
   // Sync moodList with localStorage
   React.useEffect(() => {
     try {
@@ -641,8 +650,10 @@ export default function JournalModule({
           </div>
         </div>
         <div className="text-xs bg-white text-[#5D524F]/80 px-3 py-1.5 rounded-full flex items-center gap-1.5 border border-matcha-primary/20 shadow-xs">
-          <CalendarIcon className="w-3.5 h-3.5 text-matcha-primary" />
-          <span className="font-medium">Journaling for {selectedDate}</span>
+          <Clock className="w-3.5 h-3.5 text-matcha-primary" />
+          <span className="font-medium">
+            {realTime.toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}
+          </span>
         </div>
       </div>
 
@@ -1644,7 +1655,8 @@ export default function JournalModule({
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold uppercase tracking-wider text-[#5D524F]">Create New Entry</span>
             <span className="text-xs font-mono text-ink-dark/60 flex items-center gap-1">
-              <Clock className="w-3.5 h-3.5 text-matcha-primary" /> {selectedDate}
+              <Clock className="w-3.5 h-3.5 text-matcha-primary" /> 
+              {realTime.toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}
             </span>
           </div>
 

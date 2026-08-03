@@ -306,6 +306,20 @@ export default function CalendarModule({
     }
   };
 
+  const handleJumpToToday = () => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = today.getMonth();
+    const date = today.getDate();
+    
+    setCurrentYear(year);
+    setCurrentMonth(month);
+    
+    const mm = String(month + 1).padStart(2, '0');
+    const dd = String(date).padStart(2, '0');
+    onSelectDate(`${year}-${mm}-${dd}`);
+  };
+
   const getFormattedDate = (day: number) => {
     const mm = String(currentMonth + 1).padStart(2, '0');
     const dd = String(day).padStart(2, '0');
@@ -687,6 +701,13 @@ export default function CalendarModule({
               </button>
             </div>
             
+            <button
+              onClick={handleJumpToToday}
+              className="px-3 py-1.5 h-full rounded-full bg-white border border-matcha-primary/20 text-xs font-bold text-[#5D524F] hover:bg-[#FAF0EC] hover:text-matcha-primary transition-all shadow-xs flex items-center cursor-pointer"
+            >
+              Today
+            </button>
+
             <div className="flex items-center gap-2 bg-white p-1.5 rounded-full border border-matcha-primary/20 shadow-xs justify-between">
               <button onClick={handlePrevMonth} className="p-1 hover:bg-[#FAF0EC] rounded-full transition-colors text-[#5D524F] cursor-pointer">
                 <ChevronLeft className="w-4 h-4" />

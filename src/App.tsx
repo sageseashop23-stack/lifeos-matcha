@@ -688,9 +688,9 @@ export default function App() {
                 cycleSettings={cycleSettings}
               />
             ) : (
-              <div className="flex flex-col xl:flex-row gap-6 lg:gap-8 items-start w-full">
-                {/* Calendar Pane (Left side on Desktop, 1st block) */}
-                <div className={`flex-1 w-full min-w-0 ${activeTab !== 'calendar' ? 'hidden xl:block' : ''}`}>
+              <div className="flex flex-col gap-6 lg:gap-8 items-start w-full">
+                {/* Calendar Pane (Top) */}
+                <div className={`w-full min-w-0 ${activeTab !== 'calendar' ? 'hidden xl:block' : ''}`}>
                   <CalendarModule
                     contentItems={contentItems}
                     socialEvents={socialEvents}
@@ -712,8 +712,8 @@ export default function App() {
                   />
                 </div>
 
-                {/* Journal Pane (Right side on Desktop, 2nd block) */}
-                <div className={`w-full xl:w-[420px] 2xl:w-[480px] shrink-0 ${activeTab !== 'journal' ? 'hidden xl:block' : ''}`}>
+                {/* Journal Pane (Bottom) */}
+                <div className={`w-full shrink-0 ${activeTab !== 'journal' ? 'hidden xl:block' : ''}`}>
                   <JournalModule
                     entries={journalEntries}
                     onAddEntry={handleAddJournalEntry}

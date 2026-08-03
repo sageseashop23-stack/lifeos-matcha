@@ -7,6 +7,7 @@ A highly responsive, mobile-first companion application combining a **3-Lens Lif
 ## 🎨 Design Philosophy
 * **Aesthetic & Mood:** Calming, tactile tones inspired by organic Matcha greens (`#97b58e`), warm slate backgrounds (`#5D524F`), and soft off-white surfaces (`#FAF0EC`).
 * **Typography:** Elegant display typography paired with clean, readable monospaced layout elements for indicators.
+* **Stacked Workspace Layout:** Highly productive desktop workspace mode featuring a top-to-bottom layout with the Calendar up top and Journal directly below, allowing for effortless daily scheduling alongside private reflection.
 * **Touch & Mobile First:** Pinned sidebar and top tab navigation optimizing access for touch targets and screen-width adaptation.
 * **Data Privacy:** 100% offline-first local storage model with optional self-hosted Google Drive / Google Sheets syncing. Zero tracking or third-party ads.
 
@@ -15,6 +16,8 @@ A highly responsive, mobile-first companion application combining a **3-Lens Lif
 ## ✨ Key Features
 
 ### 1. 📅 3-Lens Lifecycle Calendar
+* **Grid & Agenda Views:** Toggle seamlessly between a standard monthly calendar grid and a clean list-based Agenda view to easily read daily schedules.
+* **Smart Navigation:** Quickly "Jump to Today" or browse surrounding dates using the Previous/Next day buttons in the Date Inspector.
 * **Content Lens (🎬):** Visualizes planned content pipelines, publication timelines, and tracking statuses.
 * **Social Lens (🥂):** Tracks personal event commitments, networking, and social phases.
 * **Evidence Lens (🎯):** Monitors deliverables, quality scores, targets met, and positive action history.
@@ -22,6 +25,7 @@ A highly responsive, mobile-first companion application combining a **3-Lens Lif
 * **Interactive Hover Tooltips:** Detailed tooltip cards revealing cycle phases, daily average mood metrics with visual scale meters, tag summaries, first journal entry snippets, and planned deliverables breakdown.
 
 ### 2. 📝 Journal Module & Side-by-Side History
+* **Fluid Animations:** Subtle fade-in and slide-up animations power a polished and responsive interaction whenever adding a new entry.
 * **Side-by-Side Layout:** Clean split view placing new log creation/analytics tabs on the left column (5 cols) and an expanded side-by-side card grid of journal history on the right column (7 cols).
 * **Custom User Mood Editor:** Users can freely create their own custom moods (with emojis and custom names), edit existing mood options, delete unused moods, or reset to defaults. All custom moods persist across session logs and entry modals.
 * **Search & Tag Filtering:** Instant search bar and interactive tag filters for searching through diary text, mood tags, and dates.

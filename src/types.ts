@@ -43,6 +43,7 @@ export interface EvidenceDeliverable {
 export interface SyncConfig {
   sheetUrl: string; // Apps Script Web App URL
   password?: string; // Optional security credential token
+  name?: string; // User's name
   enabled: boolean;
   lastSyncedAt?: string;
 }

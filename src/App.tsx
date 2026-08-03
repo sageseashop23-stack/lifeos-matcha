@@ -56,6 +56,35 @@ export default function App() {
     return saved ? JSON.parse(saved) : { sheetUrl: '', enabled: false };
   });
 
+  // Check if first-time setup is completed
+  const [isSetupComplete, setIsSetupComplete] = useState<boolean>(() => {
+    return localStorage.getItem('lifeos_setup_complete') === 'true';
+  });
+
+  const [setupData, setSetupData] = useState({
+    name: '',
+    sheetUrl: '',
+    password: ''
+  });
+
+  const handleCompleteSetup = (e: React.FormEvent) => {
+    e.preventDefault();
+    const newConfig: SyncConfig = {
+      sheetUrl: setupData.sheetUrl,
+      password: setupData.password || undefined,
+      name: setupData.name || 'Pretty XX', // Default if empty
+      enabled: !!setupData.sheetUrl,
+    };
+    setSyncConfig(newConfig);
+    localStorage.setItem('lifeos_sync_config', JSON.stringify(newConfig));
+    localStorage.setItem('lifeos_setup_complete', 'true');
+    setIsSetupComplete(true);
+    if (newConfig.password) {
+      sessionStorage.setItem('lifeos_session_authenticated', 'true');
+      setIsAuthenticated(true);
+    }
+  };
+
   // Password Authentication Layer States
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
     const saved = localStorage.getItem('lifeos_sync_config');
@@ -258,6 +287,84 @@ export default function App() {
     ? Math.round(evidenceDeliverables.reduce((acc, curr) => acc + curr.qualityScore, 0) / evidenceDeliverables.length) 
     : 100;
 
+  if (!isSetupComplete) {
+    return (
+      <div className="min-h-screen flex flex-col font-sans bg-[#FAF0EC]/30 relative overflow-hidden" id="setup-container">
+        {/* Decorative light elements in the background */}
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-strawberry-accent/15 rounded-full blur-[120px] pointer-events-none"></div>
+        <div className="absolute bottom-10 right-10 w-96 h-96 bg-matcha-primary/15 rounded-full blur-[120px] pointer-events-none"></div>
+
+        <div className="flex-1 flex flex-col items-center justify-center p-4 z-10">
+          <div className="w-full max-w-md bg-white border border-matcha-primary/20 rounded-3xl p-6 sm:p-8 space-y-6 shadow-xl relative overflow-hidden backdrop-blur-sm animate-in fade-in zoom-in-95 duration-300">
+            {/* Top design strip */}
+            <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-matcha-primary via-strawberry-accent to-matcha-primary" />
+            
+            <div className="text-center space-y-3">
+              <div className="mx-auto w-14 h-14 bg-matcha-primary/10 rounded-2xl flex items-center justify-center text-matcha-primary shadow-inner border border-matcha-primary/10 relative">
+                <Sparkles className="w-6 h-6" />
+              </div>
+              <div className="space-y-1">
+                <h2 className="text-xl font-bold text-[#5D524F] font-display tracking-tight">Welcome to LifeOS</h2>
+                <p className="text-xs text-[#5D524F]/70">Let's set up your personal sanctuary.</p>
+              </div>
+            </div>
+
+            <form onSubmit={handleCompleteSetup} className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-[#5D524F]/60 font-mono block">
+                  Your Name
+                </label>
+                <input
+                  type="text"
+                  value={setupData.name}
+                  onChange={(e) => setSetupData(prev => ({ ...prev, name: e.target.value }))}
+                  className="w-full bg-[#FAF0EC]/30 border border-matcha-primary/30 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-matcha-primary/50 text-[#5D524F] transition-all"
+                  placeholder="e.g. Liyana"
+                  required
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-[#5D524F]/60 font-mono block">
+                  Google Sheet Link (Optional)
+                </label>
+                <input
+                  type="url"
+                  value={setupData.sheetUrl}
+                  onChange={(e) => setSetupData(prev => ({ ...prev, sheetUrl: e.target.value }))}
+                  className="w-full bg-[#FAF0EC]/30 border border-matcha-primary/30 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-matcha-primary/50 text-[#5D524F] transition-all"
+                  placeholder="https://docs.google.com/spreadsheets/d/..."
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-[#5D524F]/60 font-mono block">
+                  Setup Password (Optional)
+                </label>
+                <input
+                  type="password"
+                  value={setupData.password}
+                  onChange={(e) => setSetupData(prev => ({ ...prev, password: e.target.value }))}
+                  className="w-full bg-[#FAF0EC]/30 border border-matcha-primary/30 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-matcha-primary/50 text-[#5D524F] transition-all"
+                  placeholder="Leave empty for no password"
+                />
+              </div>
+
+              <div className="pt-2">
+                <button
+                  type="submit"
+                  className="w-full bg-matcha-primary hover:bg-[#97b58e] text-white rounded-xl py-3 text-sm font-bold shadow-md shadow-matcha-primary/20 transition-all active:scale-[0.98] cursor-pointer"
+                >
+                  Enter Sanctuary
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen flex flex-col font-sans bg-[#FAF0EC]/30 relative overflow-hidden" id="password-gate-container">
@@ -357,7 +464,7 @@ export default function App() {
           <div className="space-y-1">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-[10px] bg-matcha-primary text-white font-mono font-bold uppercase tracking-widest px-2.5 py-0.5 rounded-full border border-white/20 shadow-xs">
-                HELLO PRETTY XX
+                HELLO {syncConfig.name ? syncConfig.name.toUpperCase() : 'PRETTY XX'}
               </span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-ink-dark tracking-widest font-display uppercase flex items-center gap-1.5" id="moonlog-branding-title">
@@ -582,22 +689,7 @@ export default function App() {
               />
             ) : (
               <div className="flex flex-col xl:flex-row gap-6 lg:gap-8 items-start w-full">
-                {/* Journal Pane (Left side on Desktop) */}
-                <div className={`w-full xl:w-[420px] 2xl:w-[480px] shrink-0 ${activeTab !== 'journal' ? 'hidden xl:block' : ''}`}>
-                  <JournalModule
-                    entries={journalEntries}
-                    onAddEntry={handleAddJournalEntry}
-                    onDeleteEntry={handleDeleteJournalEntry}
-                    selectedDate={selectedDate}
-                    periodLogs={periodLogs}
-                    cycleSettings={cycleSettings}
-                    onSavePeriodLog={handleSavePeriodLog}
-                    onDeletePeriodLog={handleDeletePeriodLog}
-                    onUpdateCycleSettings={setCycleSettings}
-                  />
-                </div>
-                
-                {/* Calendar Pane (Right side on Desktop) */}
+                {/* Calendar Pane (Left side on Desktop, 1st block) */}
                 <div className={`flex-1 w-full min-w-0 ${activeTab !== 'calendar' ? 'hidden xl:block' : ''}`}>
                   <CalendarModule
                     contentItems={contentItems}
@@ -617,6 +709,21 @@ export default function App() {
                     periodLogs={periodLogs}
                     cycleSettings={cycleSettings}
                     journalEntries={journalEntries}
+                  />
+                </div>
+
+                {/* Journal Pane (Right side on Desktop, 2nd block) */}
+                <div className={`w-full xl:w-[420px] 2xl:w-[480px] shrink-0 ${activeTab !== 'journal' ? 'hidden xl:block' : ''}`}>
+                  <JournalModule
+                    entries={journalEntries}
+                    onAddEntry={handleAddJournalEntry}
+                    onDeleteEntry={handleDeleteJournalEntry}
+                    selectedDate={selectedDate}
+                    periodLogs={periodLogs}
+                    cycleSettings={cycleSettings}
+                    onSavePeriodLog={handleSavePeriodLog}
+                    onDeletePeriodLog={handleDeletePeriodLog}
+                    onUpdateCycleSettings={setCycleSettings}
                   />
                 </div>
               </div>

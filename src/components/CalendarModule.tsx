@@ -169,6 +169,9 @@ export default function CalendarModule({
   const [lensEvidence, setLensEvidence] = useState(true);
   const [lensHeatmap, setLensHeatmap] = useState(true);
 
+  // View toggle
+  const [isAgendaView, setIsAgendaView] = useState(false);
+
   // Month and Year navigation
   const [currentYear, setCurrentYear] = useState(2026);
   const [currentMonth, setCurrentMonth] = useState(6); // July (0-indexed: 6)
@@ -632,6 +635,27 @@ export default function CalendarModule({
     );
   }
 
+  // Pre-calculate agenda items
+  const agendaItems = [];
+  for (let day = 1; day <= totalDays; day++) {
+    const dateStr = getFormattedDate(day);
+    const dayContent = contentItems.filter(item => item.date === dateStr);
+    const daySocial = socialEvents.filter(item => item.date === dateStr);
+    const dayEvidence = evidenceDeliverables.filter(item => item.date === dateStr);
+    const dayEntries = (journalEntries || []).filter(entry => entry.date === dateStr);
+    
+    if (dayContent.length > 0 || daySocial.length > 0 || dayEvidence.length > 0 || dayEntries.length > 0) {
+      agendaItems.push({
+        day,
+        dateStr,
+        dayContent,
+        daySocial,
+        dayEvidence,
+        dayEntries
+      });
+    }
+  }
+
   return (
     <div className="bg-white border border-matcha-primary/20 rounded-2xl shadow-xs overflow-hidden flex flex-col h-full text-[#5D524F]" id="calendar-module-container">
       {/* Header Panel */}
@@ -645,17 +669,35 @@ export default function CalendarModule({
             </div>
           </div>
 
-          {/* Month Navigator */}
-          <div className="flex items-center gap-2 bg-white p-1.5 rounded-full border border-matcha-primary/20 shadow-xs self-stretch md:self-auto justify-between">
-            <button onClick={handlePrevMonth} className="p-1 hover:bg-[#FAF0EC] rounded-full transition-colors text-[#5D524F] cursor-pointer">
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <span className="text-xs font-mono font-bold tracking-wide min-w-[110px] text-center text-[#5D524F]">
-              {months[currentMonth]} {currentYear}
-            </span>
-            <button onClick={handleNextMonth} className="p-1 hover:bg-[#FAF0EC] rounded-full transition-colors text-[#5D524F] cursor-pointer">
-              <ChevronRight className="w-4 h-4" />
-            </button>
+          {/* Month Navigator and View Toggle */}
+          <div className="flex items-center gap-2 self-stretch md:self-auto">
+            {/* View Toggle */}
+            <div className="flex items-center bg-[#FAF0EC]/60 p-1 rounded-full border border-matcha-primary/20 shadow-xs h-full">
+              <button
+                onClick={() => setIsAgendaView(false)}
+                className={`px-3 py-1 rounded-full text-xs font-bold transition-all h-full flex items-center ${!isAgendaView ? 'bg-white text-matcha-primary shadow-sm border border-matcha-primary/10' : 'text-[#5D524F]/60 hover:text-[#5D524F]'}`}
+              >
+                Grid
+              </button>
+              <button
+                onClick={() => setIsAgendaView(true)}
+                className={`px-3 py-1 rounded-full text-xs font-bold transition-all h-full flex items-center ${isAgendaView ? 'bg-white text-matcha-primary shadow-sm border border-matcha-primary/10' : 'text-[#5D524F]/60 hover:text-[#5D524F]'}`}
+              >
+                Agenda
+              </button>
+            </div>
+            
+            <div className="flex items-center gap-2 bg-white p-1.5 rounded-full border border-matcha-primary/20 shadow-xs justify-between">
+              <button onClick={handlePrevMonth} className="p-1 hover:bg-[#FAF0EC] rounded-full transition-colors text-[#5D524F] cursor-pointer">
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <span className="text-xs font-mono font-bold tracking-wide min-w-[110px] text-center text-[#5D524F]">
+                {months[currentMonth]} {currentYear}
+              </span>
+              <button onClick={handleNextMonth} className="p-1 hover:bg-[#FAF0EC] rounded-full transition-colors text-[#5D524F] cursor-pointer">
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         </div>
 
@@ -871,50 +913,144 @@ export default function CalendarModule({
         )}
       </div>
 
-      {/* Shared Grid */}
+      {/* Shared Grid or Agenda View */}
       <div className="p-4 bg-transparent border-b border-matcha-primary/10 flex-1 overflow-y-auto">
-        {/* Days of Week Headers */}
-        <div className="grid grid-cols-7 gap-1 text-center mb-1 text-[11px] font-mono font-bold text-[#5D524F]/60 uppercase tracking-wider">
-          <div>Sun</div>
-          <div>Mon</div>
-          <div>Tue</div>
-          <div>Wed</div>
-          <div>Thu</div>
-          <div>Fri</div>
-          <div>Sat</div>
-        </div>
-
-        {/* Date cells */}
-        <div className="grid grid-cols-7 gap-1">
-          {gridCells}
-        </div>
-
-        {/* Heatmap Soft Legend */}
-        {lensHeatmap && (
-          <div className="mt-4 flex flex-wrap items-center justify-between gap-2 p-2.5 bg-[#FAF0EC]/40 rounded-xl border border-matcha-primary/10 text-[10px]">
-            <span className="font-bold text-[#5D524F]/70 uppercase font-mono">Heatmap Legend:</span>
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="flex items-center gap-1">
-                <span className="w-2.5 h-2.5 rounded-sm bg-[#E3E6E8] border border-slate-300 inline-block"></span>
-                <span>Low (1-3)</span>
-              </span>
-              <span className="flex items-center gap-1">
-                <span className="w-2.5 h-2.5 rounded-sm bg-[#ECE2EB] border border-purple-200 inline-block"></span>
-                <span>Muted (3.1-5)</span>
-              </span>
-              <span className="flex items-center gap-1">
-                <span className="w-2.5 h-2.5 rounded-sm bg-[#E9F0E8] border border-emerald-200 inline-block"></span>
-                <span>Balanced (5.1-7)</span>
-              </span>
-              <span className="flex items-center gap-1">
-                <span className="w-2.5 h-2.5 rounded-sm bg-[#F8EFE4] border border-amber-200 inline-block"></span>
-                <span>Active (7.1-8.5)</span>
-              </span>
-              <span className="flex items-center gap-1">
-                <span className="w-2.5 h-2.5 rounded-sm bg-[#FDECEB] border border-rose-200 inline-block"></span>
-                <span>Peak (8.5-10)</span>
-              </span>
+        {!isAgendaView ? (
+          <>
+            {/* Days of Week Headers */}
+            <div className="grid grid-cols-7 gap-1 text-center mb-1 text-[11px] font-mono font-bold text-[#5D524F]/60 uppercase tracking-wider">
+              <div>Sun</div>
+              <div>Mon</div>
+              <div>Tue</div>
+              <div>Wed</div>
+              <div>Thu</div>
+              <div>Fri</div>
+              <div>Sat</div>
             </div>
+
+            {/* Date cells */}
+            <div className="grid grid-cols-7 gap-1">
+              {gridCells}
+            </div>
+
+            {/* Heatmap Soft Legend */}
+            {lensHeatmap && (
+              <div className="mt-4 flex flex-wrap items-center justify-between gap-2 p-2.5 bg-[#FAF0EC]/40 rounded-xl border border-matcha-primary/10 text-[10px]">
+                <span className="font-bold text-[#5D524F]/70 uppercase font-mono">Heatmap Legend:</span>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="flex items-center gap-1">
+                    <span className="w-2.5 h-2.5 rounded-sm bg-[#E3E6E8] border border-slate-300 inline-block"></span>
+                    <span>Low (1-3)</span>
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <span className="w-2.5 h-2.5 rounded-sm bg-[#ECE2EB] border border-purple-200 inline-block"></span>
+                    <span>Muted (3.1-5)</span>
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <span className="w-2.5 h-2.5 rounded-sm bg-[#E9F0E8] border border-emerald-200 inline-block"></span>
+                    <span>Balanced (5.1-7)</span>
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <span className="w-2.5 h-2.5 rounded-sm bg-[#F8EFE4] border border-amber-200 inline-block"></span>
+                    <span>Active (7.1-8.5)</span>
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <span className="w-2.5 h-2.5 rounded-sm bg-[#FDECEB] border border-rose-200 inline-block"></span>
+                    <span>Peak (8.5-10)</span>
+                  </span>
+                </div>
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="space-y-4 max-w-4xl mx-auto pb-4">
+            {agendaItems.length === 0 ? (
+              <div className="text-center py-10">
+                <p className="text-sm text-[#5D524F]/60">No logged events for this month.</p>
+              </div>
+            ) : (
+              agendaItems.map(({ day, dateStr, dayContent, daySocial, dayEvidence, dayEntries }) => {
+                const hasVisibleContent = (lensContent && dayContent.length > 0) || 
+                                          (lensSocial && daySocial.length > 0) || 
+                                          (lensEvidence && dayEvidence.length > 0) || 
+                                          (lensHeatmap && dayEntries.length > 0);
+                
+                if (!hasVisibleContent) return null;
+
+                const isSelected = dateStr === selectedDate;
+                
+                return (
+                  <div 
+                    key={dateStr}
+                    onClick={() => onSelectDate(dateStr)}
+                    className={`flex flex-col sm:flex-row gap-4 p-4 rounded-2xl border transition-all cursor-pointer group ${
+                      isSelected 
+                        ? 'bg-matcha-primary/10 border-matcha-primary/50 shadow-sm'
+                        : 'bg-white border-matcha-primary/20 hover:border-matcha-primary/40 hover:shadow-xs'
+                    }`}
+                  >
+                    <div className="sm:w-24 shrink-0">
+                      <div className="flex sm:flex-col items-center sm:items-start gap-2 sm:gap-0">
+                        <span className={`text-2xl font-bold font-mono leading-none ${isSelected ? 'text-matcha-primary' : 'text-[#5D524F]'}`}>
+                          {day}
+                        </span>
+                        <span className="text-xs text-[#5D524F]/60 font-medium uppercase tracking-widest">
+                          {new Date(dateStr).toLocaleDateString('en-US', { weekday: 'short' })}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <div className="flex-1 space-y-3">
+                      {lensHeatmap && dayEntries.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {dayEntries.map(entry => (
+                            <span key={entry.id} className="text-[10px] bg-amber-50 border border-amber-200 text-amber-800 px-2 py-1 rounded-md font-semibold" title={entry.content}>
+                              💭 {entry.mood}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                      
+                      {lensContent && dayContent.length > 0 && (
+                        <div className="space-y-1.5">
+                          {dayContent.map(item => (
+                            <div key={item.id} className="flex items-center gap-2 text-xs">
+                              <span className="w-5 text-center">{lensConfig.content.emoji}</span>
+                              <span className="font-semibold text-purple-700">{item.title}</span>
+                              <span className="text-[9px] px-1.5 py-0.5 bg-purple-100 rounded text-purple-600 font-mono">{item.phase}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      
+                      {lensSocial && daySocial.length > 0 && (
+                        <div className="space-y-1.5">
+                          {daySocial.map(event => (
+                            <div key={event.id} className="flex items-center gap-2 text-xs">
+                              <span className="w-5 text-center">{lensConfig.social.emoji}</span>
+                              <span className="font-semibold text-strawberry-accent">{event.title}</span>
+                              <span className="text-[9px] px-1.5 py-0.5 bg-[#FCDBD9]/50 rounded text-strawberry-accent font-mono">{event.phase}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      
+                      {lensEvidence && dayEvidence.length > 0 && (
+                        <div className="space-y-1.5">
+                          {dayEvidence.map(dev => (
+                            <div key={dev.id} className="flex items-center gap-2 text-xs">
+                              <span className="w-5 text-center">{lensConfig.evidence.emoji}</span>
+                              <span className="font-semibold text-emerald-700">{dev.title}</span>
+                              <span className="text-[9px] px-1.5 py-0.5 bg-emerald-100 rounded text-emerald-600 font-mono">Score: {dev.qualityScore}%</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </div>
         )}
       </div>
@@ -922,12 +1058,38 @@ export default function CalendarModule({
       {/* Date Inspector & Operations Section */}
       <div className="p-5 border-t border-matcha-primary/10 space-y-4 bg-[#FAF0EC]/30">
         <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
           <div>
             <span className="text-[10px] uppercase font-bold text-[#5D524F]/70 tracking-wider font-mono">Inspecting Date</span>
             <h3 className="text-sm font-bold text-[#5D524F] flex items-center gap-1.5">
               <CalendarIcon className="w-4 h-4 text-matcha-primary" /> {selectedDate}
             </h3>
           </div>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => {
+                const d = new Date(selectedDate);
+                d.setUTCDate(d.getUTCDate() - 1);
+                onSelectDate(d.toISOString().split('T')[0]);
+              }}
+              className="p-1.5 rounded bg-white border border-matcha-primary/20 text-[#5D524F]/70 hover:bg-[#FAF0EC] hover:text-[#5D524F] transition-colors cursor-pointer"
+              title="Previous Day"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => {
+                const d = new Date(selectedDate);
+                d.setUTCDate(d.getUTCDate() + 1);
+                onSelectDate(d.toISOString().split('T')[0]);
+              }}
+              className="p-1.5 rounded bg-white border border-matcha-primary/20 text-[#5D524F]/70 hover:bg-[#FAF0EC] hover:text-[#5D524F] transition-colors cursor-pointer"
+              title="Next Day"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
 
           <button
             onClick={() => setShowAddForm(!showAddForm)}

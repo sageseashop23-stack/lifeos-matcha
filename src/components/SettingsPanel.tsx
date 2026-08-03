@@ -259,6 +259,17 @@ export default function SettingsPanel({
       <div className="p-5 space-y-6">
         {/* Connection Setup Card */}
         <div className="space-y-4">
+          <div className="space-y-1.5 border-b border-matcha-primary/5 pb-4 mb-4">
+            <label className="text-xs font-bold uppercase tracking-wider text-[#5D524F]/70 block font-mono">Profile Name</label>
+            <input
+              type="text"
+              placeholder="e.g. Pretty XX"
+              value={syncConfig.name || ''}
+              onChange={(e) => onUpdateConfig({ name: e.target.value })}
+              className="bg-[#FAF0EC]/20 border border-matcha-primary/20 rounded-lg px-3 py-2 text-xs w-full focus:outline-none focus:ring-1 focus:ring-matcha-primary text-[#5D524F] font-mono placeholder-[#5D524F]/40 max-w-sm"
+            />
+          </div>
+
           <div className="space-y-1.5">
             <label className="text-xs font-bold uppercase tracking-wider text-[#5D524F]/70 block font-mono">Database URL Connection</label>
             <div className="flex gap-2">

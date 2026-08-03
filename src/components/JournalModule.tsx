@@ -653,7 +653,7 @@ export default function JournalModule({
           {/* Left Column (5 cols): Analytics Tabs & New Entry Creation */}
           <div className="lg:col-span-5 space-y-6">
             {/* Analytics & Cycle Section Tabs */}
-        <div className="bg-[#FAF0EC]/60 border border-matcha-primary/20 rounded-xl p-4 space-y-4 shadow-xs">
+        <div className="bg-[#FAF0EC]/60 border border-matcha-primary/20 rounded-xl p-4 space-y-4 shadow-xs xl:hidden">
           {/* Tab Navigation */}
           <div className="flex border-b border-matcha-primary/10 pb-2 gap-2 text-xs font-semibold overflow-x-auto scrollbar-none">
             <button
@@ -1895,9 +1895,10 @@ export default function JournalModule({
                   {filteredEntries.map((entry, index) => (
                     <motion.div
                       key={entry.id}
-                      initial={{ opacity: 0, y: 10 }}
+                      initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, scale: 0.95 }}
+                      transition={{ duration: 0.4, ease: 'easeOut' }}
                       className="p-4 rounded-2xl border border-matcha-primary/15 bg-white hover:border-matcha-primary/35 transition-all space-y-3 relative group shadow-xs flex flex-col justify-between"
                     >
                       <div>

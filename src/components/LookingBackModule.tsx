@@ -59,7 +59,7 @@ export default function LookingBackModule({
   periodLogs,
   cycleSettings
 }: LookingBackModuleProps) {
-  const [selectedTimeframe, setSelectedTimeframe] = useState<'30days' | '90days' | 'all'>('30days');
+  const [selectedTimeframe, setSelectedTimeframe] = useState<'30days' | '90days' | 'all'>('all');
 
   // Dashboard Sections Reordering & Custom Layout State
   const [widgetOrder, setWidgetOrder] = useState<LookingBackWidgetId[]>(() => {

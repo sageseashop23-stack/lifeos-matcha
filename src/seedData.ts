@@ -1,236 +1,197 @@
-import { JournalEntry, ContentItem, SocialEvent, EvidenceDeliverable } from './types';
+import { JournalEntry, ContentItem, SocialEvent, EvidenceDeliverable, PeriodLog, CycleSettings } from './types';
 
-export const INITIAL_JOURNAL_ENTRIES: JournalEntry[] = [
-  {
-    id: 'j-1',
-    date: '2026-07-15',
-    content: 'Reflecting on the progress of Q3 goals. The habit of daily reflection is grounding me. Feeling a bit fatigued but clear-headed and focused on consistency.',
-    mood: '🌸 Serene',
-    tags: ['Reflections', 'Spiritual'],
-    photos: []
-  },
-  {
-    id: 'j-2',
-    date: '2026-07-17',
-    content: 'Began drafting the design spec for LifeOS Mini. The tiered pricing model (Lite vs Complete) is definitely the right move. Complete version will include the full 3 lenses. Keeps the core offering highly valuable and easy to maintain.',
-    mood: '⚡ Focused',
-    tags: ['Business', 'Build'],
-    photos: []
-  },
-  {
-    id: 'j-3',
-    date: '2026-07-18',
-    content: 'Finished a solid 5km trail run today. Muscle soreness is real, but mentally I feel completely restored. Consistency is starting to compound.',
-    mood: '🔋 Energetic',
-    tags: ['Health', 'Fitness'],
-    photos: []
-  },
-  {
-    id: 'j-4',
-    date: '2026-07-19',
-    content: 'Sunday morning clarity. Writing the setup documentation for the self-hosted Google Sheet model. Standardized JSON-to-Sheet Apps Script allows buyers to own their database entirely.',
-    mood: '📝 Grateful',
-    tags: ['Writing', 'Productivity'],
-    photos: []
+// Generator function to produce authentic, varied datasets from Jan 1, 2026 to Sept 26, 2026
+function generateMassData() {
+  const journalEntries: JournalEntry[] = [];
+  const contentItems: ContentItem[] = [];
+  const socialEvents: SocialEvent[] = [];
+  const evidenceDeliverables: EvidenceDeliverable[] = [];
+  const periodLogs: PeriodLog[] = [];
+
+  const moods = [
+    '🌸 Serene', '⚡ Focused', '🔋 Energetic', '📝 Grateful', 
+    '😴 Tired', '💭 Reflective', '🌱 Growing'
+  ];
+
+  const journalTopics = [
+    { title: 'Morning clarity & routine', text: 'Started early with deep breathing and green tea. Felt centered before checking notifications.', tags: ['Mindfulness', 'Habits'] },
+    { title: 'Deep work sprint on architecture', text: 'Refactored backend data sync and modular components. Flow state achieved for 3 solid hours.', tags: ['Build', 'Engineering'] },
+    { title: 'Strategy and revenue milestones', text: 'Reviewed pipeline targets. Focused on lean operations and delivering outsized customer value.', tags: ['Business', 'Strategy'] },
+    { title: 'Evening reset and movement', text: 'Completed a 6km recovery run outdoors. Physical movement immediately untangled mental fatigue.', tags: ['Health', 'Fitness'] },
+    { title: 'Digital sanctuary reflections', text: 'Gratitude for building tools that create quiet, peaceful leverage in daily life.', tags: ['Reflections', 'Spiritual'] },
+    { title: 'Midweek review & priority check', text: 'Cut two low-priority tasks from the sprint. Saying no is the true productivity superpower.', tags: ['Productivity', 'Focus'] },
+    { title: 'Creative session & visual polish', text: 'Tuned the palette contrast and subtle borders. Design harmony brings calm to daily usage.', tags: ['Design', 'Creative'] },
+    { title: 'Mentorship and peer learning', text: 'Great exchange of ideas with fellow builders. Collective wisdom is invaluable.', tags: ['Community', 'Learning'] }
+  ];
+
+  const contentTitles = [
+    { title: 'LifeOS Mini launch manifesto', platform: 'Substack', phase: 'Completion' as const, status: 'Published' },
+    { title: 'Why local-first software wins', platform: 'X / Twitter', phase: 'Completion' as const, status: 'Published' },
+    { title: '3-Lens productivity breakdown', platform: 'YouTube', phase: 'Production' as const, status: 'Editing' },
+    { title: 'Building resilient Apps Script backends', platform: 'LinkedIn', phase: 'Planning' as const, status: 'Draft' },
+    { title: 'Minimalist desktop aesthetic walkthrough', platform: 'Instagram Reels', phase: 'Completion' as const, status: 'Published' },
+    { title: 'Hormonal cycle-aware task scheduling', platform: 'Newsletter', phase: 'Production' as const, status: 'In Review' },
+    { title: 'From chaos to clarity: A Notion refugee story', platform: 'Blog', phase: 'Planning' as const, status: 'Outlined' },
+    { title: 'How to build your own personal API', platform: 'Substack', phase: 'Completion' as const, status: 'Published' }
+  ];
+
+  const socialTitles = [
+    { title: 'Coffee & product teardown', phase: 'Completed' as const, status: 'Attended', notes: 'Insightful discussion on offline database syncing.' },
+    { title: 'Design founders mastermind', phase: 'Completed' as const, status: 'Attended', notes: 'Monthly founder sync on traction and product-market fit.' },
+    { title: 'Weekend family gathering & cooking', phase: 'Completed' as const, status: 'Attended', notes: 'Unplugged Sunday lunch with family.' },
+    { title: 'Virtual indie maker coffee chat', phase: 'Active' as const, status: 'Upcoming', notes: 'Chatting with makers about local storage resilience.' },
+    { title: 'Evening acoustic concert outing', phase: 'Completed' as const, status: 'Attended', notes: 'Live jazz music reset after a heavy shipping week.' },
+    { title: 'Quarterly board & mentor review', phase: 'Active' as const, status: 'Scheduled', notes: 'Reviewing progress and runway for Q4.' }
+  ];
+
+  const evidenceTitles: { title: string; capacity: number; val: number; unit: 'currency' | 'hours' | 'percent'; quality: number }[] = [
+    { title: 'Shipped zero-latency client data cache', capacity: 2, val: 95, unit: 'percent', quality: 98 },
+    { title: 'Published complete API sync guide', capacity: 1, val: 48, unit: 'hours', quality: 92 },
+    { title: 'Closed Q1 architectural sprint deliverables', capacity: 3, val: 100, unit: 'percent', quality: 95 },
+    { title: 'Designed high-density responsive calendar grid', capacity: 2, val: 99, unit: 'percent', quality: 96 },
+    { title: 'Shipped bidirectional Google Sheets connector', capacity: 2, val: 100, unit: 'percent', quality: 99 },
+    { title: 'Implemented cyclical health & energy correlation engine', capacity: 2, val: 32, unit: 'hours', quality: 94 },
+    { title: 'Refactored state hydration for mass stress testing', capacity: 1, val: 260, unit: 'hours', quality: 100 }
+  ];
+
+  // Helper date formatter
+  const formatDate = (d: Date) => {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  // Loop through every day from Jan 1, 2026 to Sept 26, 2026 (269 days)
+  const startDate = new Date(2026, 0, 1);
+  const endDate = new Date(2026, 8, 26); // Sept 26, 2026
+
+  let cycleDay = 1;
+  const cycleLength = 28;
+  const periodLength = 5;
+
+  let current = new Date(startDate);
+  let counter = 0;
+
+  while (current <= endDate) {
+    const dateStr = formatDate(current);
+    const dayOfWeek = current.getDay(); // 0 is Sunday, 6 is Saturday
+
+    // 1. Journal entries (logged every 1-2 days)
+    if (counter % 2 === 0 || dayOfWeek === 0 || dateStr === '2026-09-25' || dateStr === '2026-09-26') {
+      const topic = journalTopics[(counter + current.getDate()) % journalTopics.length];
+      const mood = moods[(counter * 3 + current.getDate()) % moods.length];
+      journalEntries.push({
+        id: `j-mass-${dateStr}`,
+        date: dateStr,
+        content: `**${topic.title}**\n${topic.text} (Recorded on ${dateStr} - LifeOS Sanctuary).`,
+        mood: mood,
+        tags: topic.tags,
+        photos: []
+      });
+    }
+
+    // 2. Content Pipeline Items (approx 2-3 per week)
+    if (dayOfWeek === 2 || dayOfWeek === 5) {
+      const c = contentTitles[(counter + current.getMonth()) % contentTitles.length];
+      const isPast = current < new Date(2026, 8, 20);
+      contentItems.push({
+        id: `c-mass-${dateStr}`,
+        date: dateStr,
+        title: `${c.title} #${Math.floor(counter / 7) + 1}`,
+        phase: isPast ? 'Completion' : c.phase,
+        status: isPast ? 'Published' : c.status,
+        notes: `Platform: ${c.platform}. Strategic distribution for Q${Math.floor(current.getMonth() / 3) + 1}.`
+      });
+    }
+
+    // 3. Social Events (weekends and Thursdays)
+    if (dayOfWeek === 4 || dayOfWeek === 6) {
+      const s = socialTitles[(counter + current.getDate()) % socialTitles.length];
+      const isPast = current < new Date(2026, 8, 24);
+      socialEvents.push({
+        id: `s-mass-${dateStr}`,
+        date: dateStr,
+        title: s.title,
+        phase: isPast ? 'Completed' : s.phase,
+        status: isPast ? 'Attended' : s.status,
+        notes: s.notes
+      });
+    }
+
+    // 4. Evidence Deliverables (every ~10 days)
+    if (current.getDate() === 5 || current.getDate() === 15 || current.getDate() === 25) {
+      const e = evidenceTitles[(counter + current.getMonth()) % evidenceTitles.length];
+      evidenceDeliverables.push({
+        id: `e-mass-${dateStr}`,
+        date: dateStr,
+        title: `${e.title}`,
+        capacityCount: e.capacity,
+        impactValue: e.val,
+        impactUnit: e.unit,
+        qualityScore: e.quality,
+        notes: `Milestone verified for ${dateStr}. High impact delivery record.`
+      });
+    }
+
+    // 5. Hormonal & Cycle Logs throughout the entire 9 months
+    if (cycleDay <= periodLength) {
+      periodLogs.push({
+        id: `p-mass-${dateStr}`,
+        date: dateStr,
+        flow: cycleDay === 1 || cycleDay === 2 ? 'Heavy' : cycleDay === 3 ? 'Medium' : 'Light',
+        symptoms: cycleDay <= 2 ? ['Cramping', 'Fatigue'] : ['Fatigue'],
+        notes: `Cycle Day ${cycleDay}: Menstrual phase pacing. Warm hydration.`
+      });
+    } else if (cycleDay === 14) {
+      periodLogs.push({
+        id: `p-mass-${dateStr}`,
+        date: dateStr,
+        flow: 'None',
+        symptoms: ['High Energy', 'Mental Clarity'],
+        lhTest: 'Peak',
+        cervicalMucus: 'Egg-white',
+        notes: `Cycle Day 14: Ovulatory peak. Maximum physical & cognitive capacity.`
+      });
+    } else if (cycleDay === 26) {
+      periodLogs.push({
+        id: `p-mass-${dateStr}`,
+        date: dateStr,
+        flow: 'None',
+        symptoms: ['Bloating', 'Sugar Cravings'],
+        notes: `Cycle Day 26: Late luteal phase. Prioritized sleep and reduced high-strain meetings.`
+      });
+    }
+
+    cycleDay = (cycleDay % cycleLength) + 1;
+    current.setDate(current.getDate() + 1);
+    counter++;
   }
-];
 
-export const INITIAL_CONTENT_ITEMS: ContentItem[] = [
-  {
-    id: 'c-1',
-    date: '2026-07-12',
-    title: 'Write LifeOS Mini announcement thread',
-    phase: 'Completion',
-    status: 'Published',
-    notes: 'Shared on Threads and Twitter. Focus on single-view simplicity.'
-  },
-  {
-    id: 'c-2',
-    date: '2026-07-17',
-    title: 'Record Loom setup video for Sheets integration',
-    phase: 'Production',
-    status: 'Draft',
-    notes: 'Keep it under 3 minutes. Focus on Apps Script copy-pasting.'
-  },
-  {
-    id: 'c-3',
-    date: '2026-07-20',
-    title: 'Design Gumroad launch banners',
-    phase: 'Planning',
-    status: 'Planned',
-    notes: 'Clean minimalist design with a sleek cosmic slate look.'
-  },
-  {
-    id: 'c-4',
-    date: '2026-07-24',
-    title: 'Pre-launch email to early buyers list',
-    phase: 'Planning',
-    status: 'Idea',
-    notes: 'Highlight the 3-lens calendar complexity and pricing tiers.'
-  }
-];
+  // Reverse so newest entries appear first where expected
+  journalEntries.reverse();
 
-export const INITIAL_SOCIAL_EVENTS: SocialEvent[] = [
-  {
-    id: 's-1',
-    date: '2026-07-15',
-    title: 'Weekly Spiritual Study Class (Online)',
-    phase: 'Completed',
-    status: 'Attended',
-    notes: 'Discussed sincerity and consistency in daily practices.'
-  },
-  {
-    id: 's-2',
-    date: '2026-07-19',
-    title: 'Sunday Dinner with Family',
-    phase: 'Active',
-    status: 'Today',
-    notes: 'Bringing local desserts. Rest and connection night.'
-  },
-  {
-    id: 's-3',
-    date: '2026-07-22',
-    title: 'Monthly Professional Therapy Session',
-    phase: 'Planning',
-    status: 'Confirmed',
-    notes: 'Trauma processing and mental resilience check-in.'
-  },
-  {
-    id: 's-4',
-    date: '2026-07-26',
-    title: 'Morning 5km Community Run',
-    phase: 'Planning',
-    status: 'Invited',
-    notes: 'Gathering at the park at 7 AM. Friendly group pace.'
-  }
-];
+  return {
+    journalEntries,
+    contentItems,
+    socialEvents,
+    evidenceDeliverables,
+    periodLogs,
+    cycleSettings: {
+      cycleLength: 28,
+      periodLength: 5,
+      lastPeriodDate: '2026-09-18', // Recent cycle in September 2026
+      isPCOSEnabled: false,
+      isIrregular: false
+    }
+  };
+}
 
-export const INITIAL_EVIDENCE_DELIVERABLES: EvidenceDeliverable[] = [
-  {
-    id: 'e-1',
-    date: '2026-07-14',
-    title: 'Built and verified the Sheets Sync Core Integration',
-    capacityCount: 1,
-    impactValue: 8,
-    impactUnit: 'hours',
-    qualityScore: 100,
-    notes: 'Saved 8 hours of manual backup time. Full JSON integration with robust field verification.'
-  },
-  {
-    id: 'e-2',
-    date: '2026-07-16',
-    title: 'Refined Gumroad sales copy using 70/20/10 structure',
-    capacityCount: 1,
-    impactValue: 250,
-    impactUnit: 'currency',
-    qualityScore: 95,
-    notes: 'Generated RM250 in direct pre-order sales. High-contrast layout converts exceptionally well.'
-  },
-  {
-    id: 'e-3',
-    date: '2026-07-18',
-    title: 'Completed 5km trail run under 32 minutes',
-    capacityCount: 1,
-    impactValue: 15,
-    impactUnit: 'percent',
-    qualityScore: 100,
-    notes: '15% improvement in cardiovascular endurance and pacing consistency compared to June.'
-  }
-];
+export const MASS_STRESS_TEST_DATA = generateMassData();
 
-export const INITIAL_PERIOD_LOGS: any[] = [
-  {
-    id: 'p-1',
-    date: '2026-07-10',
-    flow: 'Heavy',
-    symptoms: ['Cramping', 'Fatigue'],
-    notes: 'First day of cycle. Felt tired but stayed warm.'
-  },
-  {
-    id: 'p-2',
-    date: '2026-07-11',
-    flow: 'Medium',
-    symptoms: ['Cramping', 'Bloating'],
-    notes: 'Bloating began in the afternoon. Drank warm chamomile tea.'
-  },
-  {
-    id: 'p-3',
-    date: '2026-07-12',
-    flow: 'Light',
-    symptoms: ['Fatigue'],
-    notes: 'Period flow decreasing, but still lower energy.'
-  },
-  {
-    id: 'p-4',
-    date: '2026-07-13',
-    flow: 'Light',
-    symptoms: ['Headache'],
-    notes: 'Mild headache. Rested early.'
-  },
-  {
-    id: 'p-5',
-    date: '2026-07-23',
-    flow: 'None',
-    symptoms: ['Sugar Cravings'],
-    lhTest: 'Peak',
-    cervicalMucus: 'Egg-white',
-    notes: 'Ovulation peak Day 14. High physical energy.'
-  },
-  {
-    id: 'p-6',
-    date: '2026-07-30',
-    flow: 'None',
-    symptoms: ['Bloating', 'Acne'],
-    notes: 'Luteal phase Day 21. Hormonal skin sensitivity.'
-  },
-  {
-    id: 'p-7',
-    date: '2026-08-03',
-    flow: 'None',
-    symptoms: ['Mood Swings', 'Fatigue', 'Sugar Cravings'],
-    notes: 'Late Luteal Day 25. Craving dark chocolate, gentle pacing.'
-  },
-  {
-    id: 'p-8',
-    date: '2026-08-05',
-    flow: 'None',
-    symptoms: ['Cramping', 'Headache'],
-    notes: 'Day 27 pre-menstrual tension. Warm baths and magnesium.'
-  },
-  {
-    id: 'p-prev-1',
-    date: '2026-06-12',
-    flow: 'Heavy',
-    symptoms: ['Cramping', 'Headache'],
-    notes: 'Previous cycle Day 1.'
-  },
-  {
-    id: 'p-prev-2',
-    date: '2026-06-13',
-    flow: 'Medium',
-    symptoms: ['Cramping', 'Fatigue'],
-    notes: 'Previous cycle Day 2.'
-  },
-  {
-    id: 'p-prev-3',
-    date: '2026-06-25',
-    flow: 'None',
-    symptoms: ['Sugar Cravings', 'Brain Fog'],
-    lhTest: 'Positive',
-    notes: 'Previous cycle Day 14 ovulation.'
-  },
-  {
-    id: 'p-prev-4',
-    date: '2026-07-07',
-    flow: 'None',
-    symptoms: ['Mood Swings', 'Fatigue'],
-    notes: 'Previous cycle Day 26 PMS.'
-  }
-];
-
-export const INITIAL_CYCLE_SETTINGS = {
-  cycleLength: 28,
-  periodLength: 5,
-  lastPeriodDate: '2026-07-10'
-};
-
+export const INITIAL_JOURNAL_ENTRIES = MASS_STRESS_TEST_DATA.journalEntries;
+export const INITIAL_CONTENT_ITEMS = MASS_STRESS_TEST_DATA.contentItems;
+export const INITIAL_SOCIAL_EVENTS = MASS_STRESS_TEST_DATA.socialEvents;
+export const INITIAL_EVIDENCE_DELIVERABLES = MASS_STRESS_TEST_DATA.evidenceDeliverables;
+export const INITIAL_PERIOD_LOGS = MASS_STRESS_TEST_DATA.periodLogs;
+export const INITIAL_CYCLE_SETTINGS = MASS_STRESS_TEST_DATA.cycleSettings;

@@ -23,6 +23,7 @@ interface SettingsPanelProps {
     period?: PeriodLog[];
     cycleSettings?: CycleSettings;
   }) => void;
+  onLoadMassStressData?: () => void;
 }
 
 export default function SettingsPanel({
@@ -34,7 +35,8 @@ export default function SettingsPanel({
   evidenceDeliverables,
   periodLogs,
   cycleSettings,
-  onImportData
+  onImportData,
+  onLoadMassStressData
 }: SettingsPanelProps) {
   const [copied, setCopied] = useState(false);
   const [showScript, setShowScript] = useState(false);
@@ -316,16 +318,21 @@ export default function SettingsPanel({
 
         {/* Sync Controls */}
         <div className="bg-[#FAF0EC]/30 border border-matcha-primary/10 rounded-2xl p-4 space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-matcha-primary/10 pb-3">
             <div className="flex items-center gap-2">
               <Database className="w-4 h-4 text-matcha-primary" />
-              <span className="text-xs font-bold text-[#5D524F] font-sans">Cloud Synchronization</span>
+              <span className="text-xs font-bold text-[#5D524F] font-sans">Cloud Synchronization & Database Health</span>
             </div>
-            {syncConfig.lastSyncedAt && (
-              <span className="text-[10px] font-mono text-[#5D524F]/70">
-                Last synced: {syncConfig.lastSyncedAt}
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-mono bg-white px-2 py-0.5 rounded border border-matcha-primary/20 text-[#5D524F]">
+                {journalEntries.length} Journals · {contentItems.length} Content · {socialEvents.length} Social · {evidenceDeliverables.length} Evidence
               </span>
-            )}
+              {syncConfig.lastSyncedAt && (
+                <span className="text-[10px] font-mono text-[#5D524F]/70">
+                  Last synced: {syncConfig.lastSyncedAt}
+                </span>
+              )}
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -473,14 +480,25 @@ export default function SettingsPanel({
             </button>
           </div>
 
-          <div className="pt-2">
+          <div className="pt-2 flex flex-col sm:flex-row gap-2">
             <button
               onClick={handleExportJSON}
-              className="w-full border border-matcha-primary/20 bg-white hover:bg-[#FAF0EC]/30 text-[#5D524F] font-bold py-2.5 px-3 rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+              className="flex-1 border border-matcha-primary/20 bg-white hover:bg-[#FAF0EC]/30 text-[#5D524F] font-bold py-2.5 px-3 rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
             >
               <Download className="w-3.5 h-3.5 text-[#5D524F]/70" />
               <span>Backup All Data locally as JSON file</span>
             </button>
+
+            {onLoadMassStressData && (
+              <button
+                onClick={onLoadMassStressData}
+                className="flex-1 border border-matcha-primary/30 bg-[#FAF0EC]/60 hover:bg-matcha-primary hover:text-white text-[#5D524F] font-bold py-2.5 px-3 rounded-xl text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+                title="Populate complete stress test datasets spanning Jan 1 to Sep 26, 2026 across all 3 lenses and journal"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-strawberry-accent" />
+                <span>Load Jan - Sep 26 Stress Test Data</span>
+              </button>
+            )}
           </div>
         </div>
 

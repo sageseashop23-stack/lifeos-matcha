@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   ContentItem, SocialEvent, EvidenceDeliverable, ContentPhase, SocialPhase, 
@@ -244,9 +244,32 @@ export default function CalendarModule({
   // View toggle
   const [isAgendaView, setIsAgendaView] = useState(false);
 
-  // Month and Year navigation
-  const [currentYear, setCurrentYear] = useState(2026);
-  const [currentMonth, setCurrentMonth] = useState(6); // July (0-indexed: 6)
+  // Month and Year navigation - automatically initialized from selectedDate
+  const [currentYear, setCurrentYear] = useState(() => {
+    if (selectedDate && /^\d{4}-\d{2}-\d{2}$/.test(selectedDate)) {
+      return parseInt(selectedDate.split('-')[0], 10);
+    }
+    return 2026;
+  });
+  const [currentMonth, setCurrentMonth] = useState(() => {
+    if (selectedDate && /^\d{4}-\d{2}-\d{2}$/.test(selectedDate)) {
+      return parseInt(selectedDate.split('-')[1], 10) - 1;
+    }
+    return 8; // September (0-indexed: 8)
+  });
+
+  // Keep month view aligned when a date in another month is selected elsewhere
+  useEffect(() => {
+    if (selectedDate && /^\d{4}-\d{2}-\d{2}$/.test(selectedDate)) {
+      const parts = selectedDate.split('-');
+      const y = parseInt(parts[0], 10);
+      const m = parseInt(parts[1], 10) - 1;
+      if (!isNaN(y) && !isNaN(m)) {
+        setCurrentYear(y);
+        setCurrentMonth(m);
+      }
+    }
+  }, [selectedDate]);
 
   // Quick Add states
   const [activeTab, setActiveTab] = useState<'content' | 'social' | 'evidence'>('content');

@@ -6,7 +6,8 @@ import {
   INITIAL_SOCIAL_EVENTS, 
   INITIAL_EVIDENCE_DELIVERABLES,
   INITIAL_PERIOD_LOGS,
-  INITIAL_CYCLE_SETTINGS
+  INITIAL_CYCLE_SETTINGS,
+  MASS_STRESS_TEST_DATA
 } from './seedData';
 import JournalModule from './components/JournalModule';
 import CalendarModule from './components/CalendarModule';
@@ -20,30 +21,61 @@ import {
 } from 'lucide-react';
 
 export default function App() {
-  // Load data from localStorage or fallback to default seeds
+  // Load data from localStorage or fallback to default seeds (auto-upgrade old 4-item July seeds to full year data)
   const [journalEntries, setJournalEntries] = useState<JournalEntry[]>(() => {
-    const saved = localStorage.getItem('lifeos_journal');
-    return saved ? JSON.parse(saved) : INITIAL_JOURNAL_ENTRIES;
+    try {
+      const saved = localStorage.getItem('lifeos_journal');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        // If user only had the old 4 items from July, upgrade to the full Jan-Sep stress test data
+        if (Array.isArray(parsed) && parsed.length > 5) return parsed;
+      }
+    } catch (e) {}
+    return INITIAL_JOURNAL_ENTRIES;
   });
 
   const [contentItems, setContentItems] = useState<ContentItem[]>(() => {
-    const saved = localStorage.getItem('lifeos_content');
-    return saved ? JSON.parse(saved) : INITIAL_CONTENT_ITEMS;
+    try {
+      const saved = localStorage.getItem('lifeos_content');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 4) return parsed;
+      }
+    } catch (e) {}
+    return INITIAL_CONTENT_ITEMS;
   });
 
   const [socialEvents, setSocialEvents] = useState<SocialEvent[]>(() => {
-    const saved = localStorage.getItem('lifeos_social');
-    return saved ? JSON.parse(saved) : INITIAL_SOCIAL_EVENTS;
+    try {
+      const saved = localStorage.getItem('lifeos_social');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 4) return parsed;
+      }
+    } catch (e) {}
+    return INITIAL_SOCIAL_EVENTS;
   });
 
   const [evidenceDeliverables, setEvidenceDeliverables] = useState<EvidenceDeliverable[]>(() => {
-    const saved = localStorage.getItem('lifeos_evidence');
-    return saved ? JSON.parse(saved) : INITIAL_EVIDENCE_DELIVERABLES;
+    try {
+      const saved = localStorage.getItem('lifeos_evidence');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 4) return parsed;
+      }
+    } catch (e) {}
+    return INITIAL_EVIDENCE_DELIVERABLES;
   });
 
   const [periodLogs, setPeriodLogs] = useState<PeriodLog[]>(() => {
-    const saved = localStorage.getItem('lifeos_period');
-    return saved ? JSON.parse(saved) : INITIAL_PERIOD_LOGS;
+    try {
+      const saved = localStorage.getItem('lifeos_period');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 8) return parsed;
+      }
+    } catch (e) {}
+    return INITIAL_PERIOD_LOGS;
   });
 
   const [cycleSettings, setCycleSettings] = useState<CycleSettings>(() => {
@@ -121,8 +153,8 @@ export default function App() {
     }
   };
 
-  // Default selected date to 2026-07-19 (the seed data hub)
-  const [selectedDate, setSelectedDate] = useState('2026-07-19');
+  // Default selected date to 2026-09-25 (Current active day)
+  const [selectedDate, setSelectedDate] = useState('2026-09-25');
   const [showSettings, setShowSettings] = useState(false);
   const [activeTab, setActiveTab] = useState<'journal' | 'calendar' | 'looking_back'>('journal');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -283,7 +315,7 @@ export default function App() {
     setPeriodLogs(prev => prev.filter(p => p.date !== date));
   };
 
-  // Sync / Import Trigger from Sheets
+  // Sync / Import Trigger from Sheets with Strategic Deep-Merge & Non-Empty Safeguards
   const handleImportData = (data: {
     journal?: JournalEntry[];
     content?: ContentItem[];
@@ -292,12 +324,72 @@ export default function App() {
     period?: PeriodLog[];
     cycleSettings?: CycleSettings;
   }) => {
-    if (data.journal) setJournalEntries(data.journal);
-    if (data.content) setContentItems(data.content);
-    if (data.social) setSocialEvents(data.social);
-    if (data.evidence) setEvidenceDeliverables(data.evidence);
-    if (data.period) setPeriodLogs(data.period);
-    if (data.cycleSettings) setCycleSettings(data.cycleSettings);
+    if (!data || typeof data !== 'object') return;
+
+    // Helper: Strategic deep-merge by key (prefers incoming valid record, preserves local if not in incoming)
+    const mergeById = <T extends { id?: string; date?: string }>(localList: T[], incomingList?: T[]): T[] => {
+      if (!incomingList || !Array.isArray(incomingList) || incomingList.length === 0) {
+        return localList; // Preserve local data completely if incoming is empty or invalid
+      }
+
+      const map = new Map<string, T>();
+      // Seed with local items
+      localList.forEach((item, index) => {
+        const key = item.id || item.date || `local-key-${index}`;
+        map.set(key, item);
+      });
+
+      // Upsert with incoming items (preserving local properties if missing in incoming)
+      incomingList.forEach((item, index) => {
+        const key = item.id || item.date || `incoming-key-${index}`;
+        const existing = map.get(key);
+        if (existing) {
+          map.set(key, { ...existing, ...item });
+        } else {
+          map.set(key, item);
+        }
+      });
+
+      return Array.from(map.values());
+    };
+
+    // Helper for period logs (keyed strictly by date)
+    const mergePeriodLogs = (localList: PeriodLog[], incomingList?: PeriodLog[]): PeriodLog[] => {
+      if (!incomingList || !Array.isArray(incomingList) || incomingList.length === 0) {
+        return localList;
+      }
+      const map = new Map<string, PeriodLog>();
+      localList.forEach(log => {
+        if (log.date) map.set(log.date, log);
+      });
+      incomingList.forEach(log => {
+        if (log.date) {
+          const existing = map.get(log.date);
+          map.set(log.date, existing ? { ...existing, ...log } : log);
+        }
+      });
+      return Array.from(map.values());
+    };
+
+    // Apply strategic deep merges only when non-empty arrays are delivered
+    if (Array.isArray(data.journal) && data.journal.length > 0) {
+      setJournalEntries(prev => mergeById(prev, data.journal));
+    }
+    if (Array.isArray(data.content) && data.content.length > 0) {
+      setContentItems(prev => mergeById(prev, data.content));
+    }
+    if (Array.isArray(data.social) && data.social.length > 0) {
+      setSocialEvents(prev => mergeById(prev, data.social));
+    }
+    if (Array.isArray(data.evidence) && data.evidence.length > 0) {
+      setEvidenceDeliverables(prev => mergeById(prev, data.evidence));
+    }
+    if (Array.isArray(data.period) && data.period.length > 0) {
+      setPeriodLogs(prev => mergePeriodLogs(prev, data.period));
+    }
+    if (data.cycleSettings && typeof data.cycleSettings === 'object' && data.cycleSettings.cycleLength) {
+      setCycleSettings(prev => ({ ...prev, ...data.cycleSettings }));
+    }
   };
 
   // Calculations for KPI dashboard indicators
@@ -622,6 +714,15 @@ export default function App() {
               periodLogs={periodLogs}
               cycleSettings={cycleSettings}
               onImportData={handleImportData}
+              onLoadMassStressData={() => {
+                setJournalEntries(MASS_STRESS_TEST_DATA.journalEntries);
+                setContentItems(MASS_STRESS_TEST_DATA.contentItems);
+                setSocialEvents(MASS_STRESS_TEST_DATA.socialEvents);
+                setEvidenceDeliverables(MASS_STRESS_TEST_DATA.evidenceDeliverables);
+                setPeriodLogs(MASS_STRESS_TEST_DATA.periodLogs);
+                setCycleSettings(MASS_STRESS_TEST_DATA.cycleSettings);
+                setSelectedDate('2026-09-25');
+              }}
             />
           </div>
         )}

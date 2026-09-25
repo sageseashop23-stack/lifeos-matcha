@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   ContentItem, SocialEvent, EvidenceDeliverable, ContentPhase, SocialPhase, 
-  PeriodLog, CycleSettings, JournalEntry, LensConfig, LensMeta 
+  PeriodLog, CycleSettings, JournalEntry, LensConfig, LensMeta, HeatmapMetricMode 
 } from '../types';
 import { getCycleInfoForDate } from '../utils/cycleUtils';
 import { 
@@ -47,13 +47,48 @@ const MOOD_INTENSITIES: Record<string, number> = {
   '🌱 Growing': 9,
 };
 
-const getHeatmapColorClass = (intensity: number) => {
+export const HEATMAP_MODES: { id: HeatmapMetricMode; label: string; emoji: string; description: string }[] = [
+  { id: 'mood', label: 'Mood Energy', emoji: '💭', description: 'Avg daily emotional energy from journal logs' },
+  { id: 'productivity', label: 'Workload Density', emoji: '⚡', description: 'Volume of tasks, content & deliverables scheduled' },
+  { id: 'quality', label: 'Quality Score', emoji: '🎯', description: 'Deliverable completion & quality accuracy (0-100%)' },
+  { id: 'cycle', label: 'Cycle & Symptoms', emoji: '🩸', description: 'Menstrual flow, ovulation surge & symptom load' },
+];
+
+const getCycleHeatmapColorClass = (phase: string, flow: string, symptomCount: number, hasLH: boolean) => {
+  if (flow === 'Heavy') return 'bg-[#FAD9D6] hover:bg-[#F7B5AF] border-rose-300 text-rose-950 font-bold';
+  if (flow === 'Medium' || flow === 'Light') return 'bg-rose-100/90 hover:bg-rose-200/80 border-rose-200 text-rose-900 font-semibold';
+  if (hasLH || phase === 'Ovulatory') return 'bg-[#FEF3C7] hover:bg-[#FDE68A] border-amber-300 text-amber-950 font-semibold';
+  if (phase === 'Menstrual') return 'bg-rose-50/80 hover:bg-rose-100/70 border-rose-200/70 text-rose-800';
+  if (phase === 'Follicular') return 'bg-[#E9F0E8] hover:bg-[#DBE7DA] border-emerald-200 text-emerald-800';
+  if (symptomCount > 0) return 'bg-[#EDE9FE] hover:bg-[#DDD6FE] border-purple-200 text-purple-900 font-semibold';
+  return 'bg-[#F5F3FF]/70 hover:bg-[#EDE9FE] border-purple-100 text-purple-800';
+};
+
+const getMoodHeatmapColorClass = (intensity: number) => {
   if (intensity <= 3) return 'bg-[#E3E6E8] hover:bg-[#D5D9DC] border-slate-300 text-slate-800';
   if (intensity <= 5) return 'bg-[#ECE2EB] hover:bg-[#DFD3E1] border-purple-200 text-purple-800';
   if (intensity <= 7) return 'bg-[#E9F0E8] hover:bg-[#DBE7DA] border-emerald-200 text-emerald-800';
   if (intensity <= 8.5) return 'bg-[#F8EFE4] hover:bg-[#F2E3CD] border-amber-200 text-amber-800';
   return 'bg-[#FDECEB] hover:bg-[#FAD9D6] border-rose-200 text-rose-800';
 };
+
+const getProductivityHeatmapColorClass = (count: number) => {
+  if (count <= 0) return '';
+  if (count === 1) return 'bg-emerald-50/80 hover:bg-emerald-100/80 border-emerald-200 text-emerald-800';
+  if (count === 2) return 'bg-emerald-100/85 hover:bg-emerald-200/80 border-emerald-300 text-emerald-900';
+  if (count === 3) return 'bg-[#d5eed1] hover:bg-[#c6e6bf] border-[#97c790] text-[#2c5324] font-medium';
+  if (count === 4) return 'bg-[#b7e2af] hover:bg-[#a5daa0] border-[#74b56b] text-[#1c3e16] font-semibold';
+  return 'bg-[#9cd394] hover:bg-[#8bc983] border-[#559b4c] text-[#13300f] font-bold shadow-2xs';
+};
+
+const getQualityHeatmapColorClass = (score: number) => {
+  if (score < 70) return 'bg-rose-100/80 hover:bg-rose-200/80 border-rose-300 text-rose-900';
+  if (score < 80) return 'bg-amber-100/80 hover:bg-amber-200/80 border-amber-300 text-amber-900';
+  if (score < 90) return 'bg-[#e2f0dd] hover:bg-[#d4e9ce] border-matcha-primary/60 text-[#3d5e38] font-medium';
+  return 'bg-[#bce6b9] hover:bg-[#abddab] border-emerald-500 text-emerald-950 font-bold';
+};
+
+const getHeatmapColorClass = getMoodHeatmapColorClass;
 
 
 const CONTENT_STATUS_MAP: Record<ContentPhase, string[]> = {
@@ -168,6 +203,43 @@ export default function CalendarModule({
   const [lensSocial, setLensSocial] = useState(true);
   const [lensEvidence, setLensEvidence] = useState(true);
   const [lensHeatmap, setLensHeatmap] = useState(true);
+
+  // Heatmap Metric Mode ('mood' | 'productivity' | 'quality')
+  const [heatmapMode, setHeatmapMode] = useState<HeatmapMetricMode>(() => {
+    try {
+      const saved = localStorage.getItem('lifeos_heatmap_mode') as HeatmapMetricMode;
+      if (saved && (saved === 'mood' || saved === 'productivity' || saved === 'quality' || saved === 'cycle')) {
+        return saved;
+      }
+    } catch (e) {}
+    return 'mood';
+  });
+
+  const handleSetHeatmapMode = (mode: HeatmapMetricMode) => {
+    setHeatmapMode(mode);
+    try {
+      localStorage.setItem('lifeos_heatmap_mode', mode);
+    } catch (e) {}
+  };
+
+  // Mini Year Overview Strip state
+  const [showYearStrip, setShowYearStrip] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem('lifeos_show_year_strip');
+      return saved !== 'false';
+    } catch (e) {}
+    return true;
+  });
+
+  const handleToggleYearStrip = () => {
+    setShowYearStrip(prev => {
+      const next = !prev;
+      try {
+        localStorage.setItem('lifeos_show_year_strip', String(next));
+      } catch (e) {}
+      return next;
+    });
+  };
 
   // View toggle
   const [isAgendaView, setIsAgendaView] = useState(false);
@@ -412,9 +484,44 @@ export default function CalendarModule({
       ? dayEntries.reduce((sum, entry) => sum + (MOOD_INTENSITIES[entry.mood] || 5), 0) / dayEntries.length
       : 0;
 
-    const heatmapBgClass = (lensHeatmap && hasEntries)
-      ? getHeatmapColorClass(avgIntensity)
-      : '';
+    const itemCount = dayContent.length + daySocial.length + dayEvidence.length;
+    const scoredDeliverables = dayEvidence.filter(dev => typeof dev.qualityScore === 'number');
+    const hasQualityData = scoredDeliverables.length > 0;
+    const avgQuality = hasQualityData
+      ? scoredDeliverables.reduce((sum, dev) => sum + (dev.qualityScore || 100), 0) / scoredDeliverables.length
+      : 0;
+
+    let hasHeatmapData = false;
+    let heatmapBgClass = '';
+    let heatmapBadge = '';
+    let heatmapBadgeTitle = '';
+
+    if (lensHeatmap) {
+      if (heatmapMode === 'mood' && hasEntries) {
+        hasHeatmapData = true;
+        heatmapBgClass = getMoodHeatmapColorClass(avgIntensity);
+        heatmapBadge = avgIntensity.toFixed(1);
+        heatmapBadgeTitle = `Avg Mood Energy: ${avgIntensity.toFixed(1)}/10 (${dayEntries.length} entries)`;
+      } else if (heatmapMode === 'productivity' && itemCount > 0) {
+        hasHeatmapData = true;
+        heatmapBgClass = getProductivityHeatmapColorClass(itemCount);
+        heatmapBadge = `${itemCount}x`;
+        heatmapBadgeTitle = `Workload Density: ${itemCount} items scheduled (${dayContent.length} content, ${daySocial.length} social, ${dayEvidence.length} deliverables)`;
+      } else if (heatmapMode === 'quality' && hasQualityData) {
+        hasHeatmapData = true;
+        heatmapBgClass = getQualityHeatmapColorClass(avgQuality);
+        heatmapBadge = `★${Math.round(avgQuality)}%`;
+        heatmapBadgeTitle = `Avg Deliverable Quality: ${Math.round(avgQuality)}% across ${scoredDeliverables.length} items`;
+      } else if (heatmapMode === 'cycle' && cycleDayInfo) {
+        const dayPeriodLog = periodLogs?.find(p => p.date === dateStr);
+        const symptomCount = (dayPeriodLog?.symptoms?.length || 0) + (dayPeriodLog?.pcosSymptoms?.length || 0);
+        const hasLH = dayPeriodLog?.lhTest === 'Peak' || dayPeriodLog?.lhTest === 'High' || dayPeriodLog?.lhTest === 'Positive';
+        hasHeatmapData = true;
+        heatmapBgClass = getCycleHeatmapColorClass(cycleDayInfo.phase, dayPeriodLog?.flow || 'None', symptomCount, hasLH);
+        heatmapBadge = `CD${cycleDayInfo.cycleDay}`;
+        heatmapBadgeTitle = `Cycle Day ${cycleDayInfo.cycleDay} (${cycleDayInfo.phase} Phase) • Flow: ${dayPeriodLog?.flow || 'None'}${symptomCount > 0 ? ` • ${symptomCount} symptoms` : ''}${hasLH ? ' • LH Peak' : ''}`;
+      }
+    }
 
     const gridIndex = startDay + day - 1;
     const isTopRows = gridIndex < 14;
@@ -426,7 +533,7 @@ export default function CalendarModule({
         className={`h-14 sm:h-24 p-1 sm:p-2 border text-left flex flex-col justify-between transition-all rounded-xl relative focus:outline-none cursor-pointer group ${
           isSelected 
             ? 'bg-matcha-primary text-white border-matcha-primary ring-2 ring-matcha-primary/30 z-10 shadow-sm hover:bg-[#97b58e]' 
-            : (lensHeatmap && hasEntries)
+            : (lensHeatmap && hasHeatmapData)
               ? heatmapBgClass
               : isPeriodDay
                 ? 'bg-rose-50/85 border-rose-200/80 hover:bg-rose-100/60 text-[#5D524F]'
@@ -436,12 +543,12 @@ export default function CalendarModule({
         }`}
       >
         <span className="flex items-center justify-between w-full">
-          <span className={`text-[10px] sm:text-xs font-mono font-bold ${isSelected ? 'text-white' : (lensHeatmap && hasEntries) ? '' : 'text-[#5D524F]/70'}`}>
+          <span className={`text-[10px] sm:text-xs font-mono font-bold ${isSelected ? 'text-white' : (lensHeatmap && hasHeatmapData) ? '' : 'text-[#5D524F]/70'}`}>
             {day}
           </span>
-          {lensHeatmap && hasEntries && !isSelected ? (
-            <span className="text-[8px] sm:text-[9px] font-bold bg-[#5D524F]/10 text-[#5D524F]/85 px-1 py-0.2 rounded-md font-mono" title={`Avg Mood Intensity: ${avgIntensity.toFixed(1)}`}>
-              {avgIntensity.toFixed(1)}
+          {lensHeatmap && hasHeatmapData && !isSelected ? (
+            <span className="text-[8px] sm:text-[9px] font-bold bg-[#5D524F]/10 text-[#5D524F]/85 px-1 py-0.2 rounded-md font-mono" title={heatmapBadgeTitle}>
+              {heatmapBadge}
             </span>
           ) : !isSelected && (isPeriodDay || isMenstrualPhase) ? (
             <span className="text-[9px] sm:text-[10px]" title={`${cycleDayInfo?.phase} Phase`}>
@@ -461,15 +568,19 @@ export default function CalendarModule({
           {lensEvidence && dayEvidence.length > 0 && (
             <span className={`w-1 h-1 rounded-full ${isSelected ? 'bg-white' : 'bg-emerald-500'}`}></span>
           )}
-          {lensHeatmap && dayEntries.length > 0 && (
-            <span className={`w-1 h-1 rounded-full ${isSelected ? 'bg-white' : 'bg-amber-500'}`}></span>
+          {lensHeatmap && hasHeatmapData && (
+            <span className={`w-1 h-1 rounded-full ${
+              isSelected ? 'bg-white' : 
+              heatmapMode === 'mood' ? 'bg-amber-500' :
+              heatmapMode === 'productivity' ? 'bg-emerald-600' : 'bg-matcha-primary'
+            }`}></span>
           )}
         </div>
 
 
         {/* Lenses Overlays on the grid cell (Desktop Only) */}
         <div className="hidden sm:block space-y-1 w-full overflow-hidden mt-1">
-          {lensHeatmap && dayEntries.map((entry) => (
+          {lensHeatmap && heatmapMode === 'mood' && dayEntries.map((entry) => (
             <div 
               key={entry.id} 
               className={`text-[9px] truncate px-1 rounded-sm border ${
@@ -482,6 +593,19 @@ export default function CalendarModule({
               💭 {entry.mood}
             </div>
           ))}
+
+          {lensHeatmap && heatmapMode === 'quality' && hasQualityData && (
+            <div 
+              className={`text-[9px] truncate px-1 rounded-sm border ${
+                isSelected 
+                  ? 'bg-emerald-950/40 border-emerald-800 text-emerald-100 font-medium' 
+                  : 'bg-emerald-50/80 border-emerald-200 text-emerald-800 font-bold'
+              }`}
+              title={`Deliverable Quality: ${Math.round(avgQuality)}%`}
+            >
+              🎯 Quality: {Math.round(avgQuality)}%
+            </div>
+          )}
 
           {lensContent && dayContent.map((item) => (
             <div 
@@ -527,7 +651,7 @@ export default function CalendarModule({
         </div>
 
         {/* Interactive Hover Tooltip */}
-        <div className={`absolute left-1/2 -translate-x-1/2 w-60 sm:w-68 bg-white border border-matcha-primary/20 text-[#5D524F] p-3.5 rounded-2xl shadow-xl opacity-0 scale-95 pointer-events-none group-hover:opacity-100 group-hover:scale-100 group-hover:pointer-events-auto transition-all duration-200 z-50 select-none ${
+        <div className={`absolute left-1/2 -translate-x-1/2 w-64 sm:w-72 bg-white border border-matcha-primary/20 text-[#5D524F] p-3.5 rounded-2xl shadow-xl opacity-0 scale-95 pointer-events-none group-hover:opacity-100 group-hover:scale-100 group-hover:pointer-events-auto transition-all duration-200 z-50 select-none ${
           isTopRows 
             ? 'top-full mt-2.5 origin-top' 
             : 'bottom-full mb-2.5 origin-bottom'
@@ -550,68 +674,126 @@ export default function CalendarModule({
             )}
           </div>
 
-          {/* Heatmap/Mood Info */}
-          {hasEntries ? (
-            <div className="space-y-2.5">
-              <div>
-                <div className="flex justify-between items-center text-[10px] font-bold mb-1">
-                  <span className="text-[#5D524F]/70">Daily Mood Energy</span>
-                  <span className="text-amber-600 font-mono font-bold">{avgIntensity.toFixed(1)}/10</span>
+          {/* Productivity Density Mode Tooltip Panel */}
+          {lensHeatmap && heatmapMode === 'productivity' && (
+            <div className="space-y-2 mb-2.5 pb-2.5 border-b border-matcha-primary/10">
+              <div className="flex justify-between items-center text-[10px] font-bold">
+                <span className="text-[#5D524F]/70 flex items-center gap-1">⚡ Workload Density</span>
+                <span className="text-emerald-700 font-mono font-bold">{itemCount} items scheduled</span>
+              </div>
+              <div className="w-full bg-[#FAF0EC] h-1.5 rounded-full overflow-hidden flex">
+                {itemCount > 0 ? (
+                  <>
+                    <div style={{ width: `${(dayContent.length / itemCount) * 100}%` }} className="h-full bg-purple-500" title="Content" />
+                    <div style={{ width: `${(daySocial.length / itemCount) * 100}%` }} className="h-full bg-strawberry-accent" title="Social" />
+                    <div style={{ width: `${(dayEvidence.length / itemCount) * 100}%` }} className="h-full bg-emerald-500" title="Evidence" />
+                  </>
+                ) : (
+                  <div className="w-full h-full bg-slate-200" />
+                )}
+              </div>
+              <div className="grid grid-cols-3 gap-1 text-[9px] text-center pt-1 font-mono">
+                <div className="bg-purple-50 border border-purple-100 rounded px-1 py-0.5 text-purple-700 font-semibold">
+                  {dayContent.length} {lensConfig.content.emoji}
                 </div>
-                <div className="w-full bg-[#FAF0EC] h-1.5 rounded-full overflow-hidden border border-matcha-primary/5">
-                  <div 
-                    className="h-full rounded-full transition-all duration-300"
-                    style={{ 
-                      width: `${avgIntensity * 10}%`,
-                      backgroundColor: avgIntensity <= 3 ? '#94a3b8' :
-                                      avgIntensity <= 5 ? '#a78bfa' :
-                                      avgIntensity <= 7 ? '#10b981' :
-                                      avgIntensity <= 8.5 ? '#f59e0b' : '#f43f5e'
-                    }}
-                  />
+                <div className="bg-[#FCDBD9]/40 border border-strawberry-accent/20 rounded px-1 py-0.5 text-strawberry-accent font-semibold">
+                  {daySocial.length} {lensConfig.social.emoji}
+                </div>
+                <div className="bg-emerald-50 border border-emerald-100 rounded px-1 py-0.5 text-emerald-700 font-semibold">
+                  {dayEvidence.length} {lensConfig.evidence.emoji}
                 </div>
               </div>
+            </div>
+          )}
 
-              {/* Logged Moods list */}
-              <div className="flex flex-wrap gap-1 items-center">
-                <span className="text-[9px] font-bold text-[#5D524F]/50 uppercase tracking-wider">Moods:</span>
-                {dayEntries.map((entry, idx) => (
-                  <span key={entry.id || idx} className="bg-amber-50/70 border border-amber-200/50 px-1.5 py-0.5 rounded text-[9px] font-bold text-[#5D524F]/85 inline-block">
-                    {entry.mood}
-                  </span>
-                ))}
+          {/* Quality Mode Tooltip Panel */}
+          {lensHeatmap && heatmapMode === 'quality' && (
+            <div className="space-y-2 mb-2.5 pb-2.5 border-b border-matcha-primary/10">
+              <div className="flex justify-between items-center text-[10px] font-bold">
+                <span className="text-[#5D524F]/70 flex items-center gap-1">🎯 Deliverable Quality</span>
+                <span className="text-emerald-700 font-mono font-bold">
+                  {hasQualityData ? `★ ${Math.round(avgQuality)}%` : 'No deliverables'}
+                </span>
               </div>
-
-              {/* Tag Highlights */}
-              {dayEntries.some(entry => entry.tags && entry.tags.length > 0) ? (
-                <div className="pt-2 border-t border-matcha-primary/5">
-                  <div className="text-[9px] font-bold text-[#5D524F]/50 uppercase tracking-wider mb-1">Tag Highlights</div>
-                  <div className="flex flex-wrap gap-1">
-                    {Array.from(new Set(dayEntries.flatMap(entry => entry.tags || []))).map((tag, tagIdx) => (
-                      <span key={tagIdx} className="bg-matcha-primary/10 text-matcha-primary border border-matcha-primary/20 px-2 py-0.5 rounded-full text-[9px] font-semibold">
-                        #{tag}
-                      </span>
-                    ))}
-                  </div>
+              {hasQualityData ? (
+                <div className="space-y-1 pt-1">
+                  {scoredDeliverables.map(dev => (
+                    <div key={dev.id} className="flex items-center justify-between text-[9px] bg-emerald-50/60 border border-emerald-200/50 p-1 rounded">
+                      <span className="truncate max-w-[140px] font-semibold">{dev.title}</span>
+                      <span className="font-mono font-bold text-emerald-800">{dev.qualityScore}%</span>
+                    </div>
+                  ))}
                 </div>
               ) : (
-                <div className="text-[9px] text-[#5D524F]/40 italic pt-1.5 border-t border-matcha-primary/5">
-                  No custom tags logged for this day
-                </div>
+                <p className="text-[9px] text-[#5D524F]/50 italic">No evidence deliverables logged on this day</p>
               )}
+            </div>
+          )}
 
-              {/* First Entry Preview snippet */}
-              {dayEntries[0]?.content && (
-                <div className="pt-2 border-t border-matcha-primary/5 text-[9px] text-[#5D524F]/75 italic line-clamp-2 leading-relaxed bg-[#FAF0EC]/30 p-1.5 rounded-lg border border-matcha-primary/5">
-                  "{dayEntries[0].content}"
+          {/* Mood Section */}
+          {(heatmapMode === 'mood' || (!lensHeatmap && hasEntries)) && (
+            hasEntries ? (
+              <div className="space-y-2.5">
+                <div>
+                  <div className="flex justify-between items-center text-[10px] font-bold mb-1">
+                    <span className="text-[#5D524F]/70">Daily Mood Energy</span>
+                    <span className="text-amber-600 font-mono font-bold">{avgIntensity.toFixed(1)}/10</span>
+                  </div>
+                  <div className="w-full bg-[#FAF0EC] h-1.5 rounded-full overflow-hidden border border-matcha-primary/5">
+                    <div 
+                      className="h-full rounded-full transition-all duration-300"
+                      style={{ 
+                        width: `${avgIntensity * 10}%`,
+                        backgroundColor: avgIntensity <= 3 ? '#94a3b8' :
+                                        avgIntensity <= 5 ? '#a78bfa' :
+                                        avgIntensity <= 7 ? '#10b981' :
+                                        avgIntensity <= 8.5 ? '#f59e0b' : '#f43f5e'
+                      }}
+                    />
+                  </div>
                 </div>
-              )}
-            </div>
-          ) : (
-            <div className="text-center py-2 space-y-1">
-              <p className="text-[10px] text-[#5D524F]/60">No journal logs for this day</p>
-              <p className="text-[8px] text-matcha-primary/80 font-bold uppercase tracking-wider">Click cell to add journal entry</p>
-            </div>
+
+                {/* Logged Moods list */}
+                <div className="flex flex-wrap gap-1 items-center">
+                  <span className="text-[9px] font-bold text-[#5D524F]/50 uppercase tracking-wider">Moods:</span>
+                  {dayEntries.map((entry, idx) => (
+                    <span key={entry.id || idx} className="bg-amber-50/70 border border-amber-200/50 px-1.5 py-0.5 rounded text-[9px] font-bold text-[#5D524F]/85 inline-block">
+                      {entry.mood}
+                    </span>
+                  ))}
+                </div>
+
+                {/* Tag Highlights */}
+                {dayEntries.some(entry => entry.tags && entry.tags.length > 0) ? (
+                  <div className="pt-2 border-t border-matcha-primary/5">
+                    <div className="text-[9px] font-bold text-[#5D524F]/50 uppercase tracking-wider mb-1">Tag Highlights</div>
+                    <div className="flex flex-wrap gap-1">
+                      {Array.from(new Set(dayEntries.flatMap(entry => entry.tags || []))).map((tag, tagIdx) => (
+                        <span key={tagIdx} className="bg-matcha-primary/10 text-matcha-primary border border-matcha-primary/20 px-2 py-0.5 rounded-full text-[9px] font-semibold">
+                          #{tag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-[9px] text-[#5D524F]/40 italic pt-1.5 border-t border-matcha-primary/5">
+                    No custom tags logged for this day
+                  </div>
+                )}
+
+                {/* First Entry Preview snippet */}
+                {dayEntries[0]?.content && (
+                  <div className="pt-2 border-t border-matcha-primary/5 text-[9px] text-[#5D524F]/75 italic line-clamp-2 leading-relaxed bg-[#FAF0EC]/30 p-1.5 rounded-lg border border-matcha-primary/5">
+                    "{dayEntries[0].content}"
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="text-center py-2 space-y-1">
+                <p className="text-[10px] text-[#5D524F]/60">No journal logs for this day</p>
+                <p className="text-[8px] text-matcha-primary/80 font-bold uppercase tracking-wider">Click cell to add journal entry</p>
+              </div>
+            )
           )}
 
           {/* Quick summary of other events/deliverables on that day */}
@@ -765,17 +947,54 @@ export default function CalendarModule({
             <span>{lensConfig.evidence.emoji} {lensConfig.evidence.name}</span>
           </button>
 
-          {/* Mood Heatmap Toggle */}
+          {/* Heatmap Layer Toggle */}
           <button
             onClick={() => setLensHeatmap(!lensHeatmap)}
             className={`px-3 py-1.5 rounded-full text-xs font-semibold border flex items-center gap-1.5 transition-all cursor-pointer ${
               lensHeatmap 
-                ? 'bg-amber-50 border-amber-300 text-amber-700 shadow-xs' 
+                ? 'bg-amber-50 border-amber-300 text-amber-800 shadow-xs ring-1 ring-amber-300/40' 
                 : 'bg-white border-matcha-primary/20 text-[#5D524F]/50 hover:bg-[#FAF0EC]/40'
             }`}
+            title="Toggle calendar heatmap tinting layer"
           >
             <span className={`w-1.5 h-1.5 rounded-full ${lensHeatmap ? 'bg-amber-500 animate-pulse' : 'bg-matcha-primary/20'}`}></span>
-            <span>Mood Heatmap</span>
+            <span>Heatmap</span>
+          </button>
+
+          {/* Heatmap Metric Mode Selector (visible when Heatmap is active) */}
+          {lensHeatmap && (
+            <div className="flex items-center bg-[#FAF0EC]/80 p-0.5 rounded-full border border-matcha-primary/20 shadow-2xs">
+              {HEATMAP_MODES.map(mode => (
+                <button
+                  key={mode.id}
+                  onClick={() => handleSetHeatmapMode(mode.id)}
+                  className={`px-2.5 py-1 rounded-full text-[11px] font-semibold flex items-center gap-1 transition-all cursor-pointer ${
+                    heatmapMode === mode.id
+                      ? 'bg-white text-matcha-primary shadow-xs border border-matcha-primary/20 font-bold'
+                      : 'text-[#5D524F]/70 hover:text-[#5D524F]'
+                  }`}
+                  title={mode.description}
+                >
+                  <span>{mode.emoji}</span>
+                  <span className="hidden sm:inline">{mode.label}</span>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* 12-Month Year Strip Toggle Button */}
+          <button
+            onClick={handleToggleYearStrip}
+            className={`px-2.5 py-1.5 rounded-full text-xs font-semibold border flex items-center gap-1.5 transition-all cursor-pointer ${
+              showYearStrip
+                ? 'bg-matcha-primary/10 border-matcha-primary/40 text-matcha-primary font-bold shadow-2xs'
+                : 'bg-white border-matcha-primary/20 text-[#5D524F]/60 hover:bg-[#FAF0EC]/40'
+            }`}
+            title="Toggle 12-Month Year Overview Heatmap Strip"
+          >
+            <Activity className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Year Strip</span>
+            <span className="sm:hidden">Year</span>
           </button>
 
           {/* Customize Lenses Button */}
@@ -938,6 +1157,99 @@ export default function CalendarModule({
       <div className="p-4 bg-transparent border-b border-matcha-primary/10 flex-1 overflow-y-auto">
         {!isAgendaView ? (
           <>
+            {/* 12-Month Mini Year Overview Strip */}
+            {showYearStrip && (
+              <div className="mb-4 bg-linear-to-r from-[#FAF0EC]/80 via-white to-[#FAF0EC]/50 border border-matcha-primary/20 rounded-2xl p-3 shadow-2xs space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Activity className="w-4 h-4 text-matcha-primary" />
+                    <span className="text-xs font-bold font-mono text-[#5D524F] uppercase tracking-wider">
+                      {currentYear} Year-at-a-Glance Heatmap
+                    </span>
+                    <span className="text-[10px] bg-white px-2 py-0.5 rounded-full border border-matcha-primary/20 text-[#5D524F]/80 font-medium">
+                      {HEATMAP_MODES.find(m => m.id === heatmapMode)?.emoji} {HEATMAP_MODES.find(m => m.id === heatmapMode)?.label}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 text-[10px] text-[#5D524F]/60 font-mono">
+                    <span className="hidden sm:inline">Click any month to navigate</span>
+                    <button
+                      onClick={() => setShowYearStrip(false)}
+                      className="p-1 rounded-full hover:bg-[#FAF0EC] text-[#5D524F]/60 hover:text-[#5D524F] transition-colors cursor-pointer"
+                      title="Hide Year Strip"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* 12 Month Grid Ribbon */}
+                <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-12 gap-1.5">
+                  {months.map((mName, mIdx) => {
+                    const mPrefix = `${currentYear}-${String(mIdx + 1).padStart(2, '0')}`;
+                    const mContent = contentItems.filter(c => c.date.startsWith(mPrefix));
+                    const mSocial = socialEvents.filter(s => s.date.startsWith(mPrefix));
+                    const mEvidence = evidenceDeliverables.filter(e => e.date.startsWith(mPrefix));
+                    const mEntries = (journalEntries || []).filter(j => j.date.startsWith(mPrefix));
+                    const totalMonthItems = mContent.length + mSocial.length + mEvidence.length;
+
+                    let monthBadge = '—';
+                    let monthBgClass = 'bg-white border-matcha-primary/10 text-[#5D524F]';
+                    let monthTooltipDesc = `${mName} ${currentYear}: `;
+
+                    if (heatmapMode === 'mood') {
+                      if (mEntries.length > 0) {
+                        const avg = mEntries.reduce((sum, e) => sum + (MOOD_INTENSITIES[e.mood] || 5), 0) / mEntries.length;
+                        monthBadge = avg.toFixed(1);
+                        monthBgClass = getMoodHeatmapColorClass(avg);
+                        monthTooltipDesc += `Avg Mood ${avg.toFixed(1)}/10 (${mEntries.length} entries)`;
+                      } else {
+                        monthTooltipDesc += 'No journal logs';
+                      }
+                    } else if (heatmapMode === 'productivity') {
+                      monthBadge = `${totalMonthItems}`;
+                      monthBgClass = totalMonthItems > 0 ? getProductivityHeatmapColorClass(Math.min(Math.ceil(totalMonthItems / 3), 5)) : 'bg-white/70 border-matcha-primary/10 text-[#5D524F]/50';
+                      monthTooltipDesc += `${totalMonthItems} scheduled items (${mContent.length} content, ${mSocial.length} social, ${mEvidence.length} deliverables)`;
+                    } else if (heatmapMode === 'quality') {
+                      const scored = mEvidence.filter(e => typeof e.qualityScore === 'number');
+                      if (scored.length > 0) {
+                        const avg = scored.reduce((sum, e) => sum + (e.qualityScore || 100), 0) / scored.length;
+                        monthBadge = `★${Math.round(avg)}%`;
+                        monthBgClass = getQualityHeatmapColorClass(avg);
+                        monthTooltipDesc += `Avg Deliverable Quality: ${Math.round(avg)}% (${scored.length} items)`;
+                      } else {
+                        monthTooltipDesc += 'No evidence deliverables';
+                      }
+                    }
+
+                    const isCurrentActive = currentMonth === mIdx;
+
+                    return (
+                      <button
+                        key={mName}
+                        onClick={() => setCurrentMonth(mIdx)}
+                        title={monthTooltipDesc}
+                        className={`p-1.5 sm:p-2 rounded-xl border text-center transition-all cursor-pointer flex flex-col justify-between items-center relative ${
+                          isCurrentActive 
+                            ? 'ring-2 ring-matcha-primary border-matcha-primary shadow-xs scale-102 ' + monthBgClass
+                            : 'hover:border-matcha-primary/40 hover:shadow-2xs ' + monthBgClass
+                        }`}
+                      >
+                        <span className={`text-[10px] font-mono font-bold ${isCurrentActive ? 'text-matcha-primary font-black' : 'text-[#5D524F]/80'}`}>
+                          {mName.slice(0, 3)}
+                        </span>
+                        <span className="text-[10px] font-mono font-semibold mt-1">
+                          {monthBadge}
+                        </span>
+                        {isCurrentActive && (
+                          <span className="w-1.5 h-1.5 rounded-full bg-matcha-primary absolute -top-0.5 -right-0.5 ring-1 ring-white" />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {/* Days of Week Headers */}
             <div className="grid grid-cols-7 gap-1 text-center mb-1 text-[11px] font-mono font-bold text-[#5D524F]/60 uppercase tracking-wider">
               <div>Sun</div>
@@ -954,32 +1266,113 @@ export default function CalendarModule({
               {gridCells}
             </div>
 
-            {/* Heatmap Soft Legend */}
+            {/* Dynamic Multi-Metric Heatmap Legend */}
             {lensHeatmap && (
-              <div className="mt-4 flex flex-wrap items-center justify-between gap-2 p-2.5 bg-[#FAF0EC]/40 rounded-xl border border-matcha-primary/10 text-[10px]">
-                <span className="font-bold text-[#5D524F]/70 uppercase font-mono">Heatmap Legend:</span>
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="flex items-center gap-1">
-                    <span className="w-2.5 h-2.5 rounded-sm bg-[#E3E6E8] border border-slate-300 inline-block"></span>
-                    <span>Low (1-3)</span>
+              <div className="mt-4 flex flex-wrap items-center justify-between gap-3 p-3 bg-[#FAF0EC]/50 rounded-2xl border border-matcha-primary/15 text-[10px]">
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-[#5D524F] uppercase font-mono tracking-wider flex items-center gap-1.5">
+                    <span>{HEATMAP_MODES.find(m => m.id === heatmapMode)?.emoji}</span>
+                    <span>{HEATMAP_MODES.find(m => m.id === heatmapMode)?.label} Legend:</span>
                   </span>
-                  <span className="flex items-center gap-1">
-                    <span className="w-2.5 h-2.5 rounded-sm bg-[#ECE2EB] border border-purple-200 inline-block"></span>
-                    <span>Muted (3.1-5)</span>
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <span className="w-2.5 h-2.5 rounded-sm bg-[#E9F0E8] border border-emerald-200 inline-block"></span>
-                    <span>Balanced (5.1-7)</span>
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <span className="w-2.5 h-2.5 rounded-sm bg-[#F8EFE4] border border-amber-200 inline-block"></span>
-                    <span>Active (7.1-8.5)</span>
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <span className="w-2.5 h-2.5 rounded-sm bg-[#FDECEB] border border-rose-200 inline-block"></span>
-                    <span>Peak (8.5-10)</span>
-                  </span>
+                  <span className="text-[#5D524F]/60 hidden md:inline">({HEATMAP_MODES.find(m => m.id === heatmapMode)?.description})</span>
                 </div>
+
+                {/* Swatches according to mode */}
+                {heatmapMode === 'mood' && (
+                  <div className="flex flex-wrap items-center gap-2 font-mono">
+                    <span className="flex items-center gap-1">
+                      <span className="w-2.5 h-2.5 rounded-sm bg-[#E3E6E8] border border-slate-300 inline-block"></span>
+                      <span>Low (≤3)</span>
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <span className="w-2.5 h-2.5 rounded-sm bg-[#ECE2EB] border border-purple-200 inline-block"></span>
+                      <span>Muted (3.1-5)</span>
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <span className="w-2.5 h-2.5 rounded-sm bg-[#E9F0E8] border border-emerald-200 inline-block"></span>
+                      <span>Balanced (5.1-7)</span>
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <span className="w-2.5 h-2.5 rounded-sm bg-[#F8EFE4] border border-amber-200 inline-block"></span>
+                      <span>Active (7.1-8.5)</span>
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <span className="w-2.5 h-2.5 rounded-sm bg-[#FDECEB] border border-rose-200 inline-block"></span>
+                      <span>Peak (8.5-10)</span>
+                    </span>
+                  </div>
+                )}
+
+                {heatmapMode === 'productivity' && (
+                  <div className="flex flex-wrap items-center gap-2 font-mono">
+                    <span className="flex items-center gap-1">
+                      <span className="w-2.5 h-2.5 rounded-sm bg-white border border-matcha-primary/20 inline-block"></span>
+                      <span>0 (Rest)</span>
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <span className="w-2.5 h-2.5 rounded-sm bg-emerald-50 border border-emerald-200 inline-block"></span>
+                      <span>1 (Light)</span>
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <span className="w-2.5 h-2.5 rounded-sm bg-emerald-100 border border-emerald-300 inline-block"></span>
+                      <span>2 (Moderate)</span>
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <span className="w-2.5 h-2.5 rounded-sm bg-[#d5eed1] border border-[#97c790] inline-block"></span>
+                      <span>3 (Active)</span>
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <span className="w-2.5 h-2.5 rounded-sm bg-[#b7e2af] border border-[#74b56b] inline-block"></span>
+                      <span>4 (High)</span>
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <span className="w-2.5 h-2.5 rounded-sm bg-[#9cd394] border border-[#559b4c] inline-block"></span>
+                      <span>5+ (Peak Load)</span>
+                    </span>
+                  </div>
+                )}
+
+                {heatmapMode === 'quality' && (
+                  <div className="flex flex-wrap items-center gap-2 font-mono">
+                    <span className="flex items-center gap-1">
+                      <span className="w-2.5 h-2.5 rounded-sm bg-rose-100 border border-rose-300 inline-block"></span>
+                      <span>&lt;70% (Polish)</span>
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <span className="w-2.5 h-2.5 rounded-sm bg-amber-100 border border-amber-300 inline-block"></span>
+                      <span>70-79% (Good)</span>
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <span className="w-2.5 h-2.5 rounded-sm bg-[#e2f0dd] border border-matcha-primary/60 inline-block"></span>
+                      <span>80-89% (Solid)</span>
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <span className="w-2.5 h-2.5 rounded-sm bg-[#bce6b9] border border-emerald-500 inline-block"></span>
+                      <span>90-100% (High Impact ★)</span>
+                    </span>
+                  </div>
+                )}
+
+                {heatmapMode === 'cycle' && (
+                  <div className="flex flex-wrap items-center gap-2 font-mono">
+                    <span className="flex items-center gap-1">
+                      <span className="w-2.5 h-2.5 rounded-sm bg-[#FAD9D6] border border-rose-300 inline-block"></span>
+                      <span>Menstrual Flow (Heavy/Med)</span>
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <span className="w-2.5 h-2.5 rounded-sm bg-[#E9F0E8] border border-emerald-200 inline-block"></span>
+                      <span>Follicular (Rest/Focus)</span>
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <span className="w-2.5 h-2.5 rounded-sm bg-[#FEF3C7] border border-amber-300 inline-block"></span>
+                      <span>Ovulatory (Surge ✨)</span>
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <span className="w-2.5 h-2.5 rounded-sm bg-[#EDE9FE] border border-purple-200 inline-block"></span>
+                      <span>Luteal (PMS Symptoms 🌙)</span>
+                    </span>
+                  </div>
+                )}
               </div>
             )}
           </>

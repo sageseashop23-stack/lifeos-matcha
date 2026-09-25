@@ -166,6 +166,65 @@ export const INITIAL_PERIOD_LOGS: any[] = [
     flow: 'Light',
     symptoms: ['Headache'],
     notes: 'Mild headache. Rested early.'
+  },
+  {
+    id: 'p-5',
+    date: '2026-07-23',
+    flow: 'None',
+    symptoms: ['Sugar Cravings'],
+    lhTest: 'Peak',
+    cervicalMucus: 'Egg-white',
+    notes: 'Ovulation peak Day 14. High physical energy.'
+  },
+  {
+    id: 'p-6',
+    date: '2026-07-30',
+    flow: 'None',
+    symptoms: ['Bloating', 'Acne'],
+    notes: 'Luteal phase Day 21. Hormonal skin sensitivity.'
+  },
+  {
+    id: 'p-7',
+    date: '2026-08-03',
+    flow: 'None',
+    symptoms: ['Mood Swings', 'Fatigue', 'Sugar Cravings'],
+    notes: 'Late Luteal Day 25. Craving dark chocolate, gentle pacing.'
+  },
+  {
+    id: 'p-8',
+    date: '2026-08-05',
+    flow: 'None',
+    symptoms: ['Cramping', 'Headache'],
+    notes: 'Day 27 pre-menstrual tension. Warm baths and magnesium.'
+  },
+  {
+    id: 'p-prev-1',
+    date: '2026-06-12',
+    flow: 'Heavy',
+    symptoms: ['Cramping', 'Headache'],
+    notes: 'Previous cycle Day 1.'
+  },
+  {
+    id: 'p-prev-2',
+    date: '2026-06-13',
+    flow: 'Medium',
+    symptoms: ['Cramping', 'Fatigue'],
+    notes: 'Previous cycle Day 2.'
+  },
+  {
+    id: 'p-prev-3',
+    date: '2026-06-25',
+    flow: 'None',
+    symptoms: ['Sugar Cravings', 'Brain Fog'],
+    lhTest: 'Positive',
+    notes: 'Previous cycle Day 14 ovulation.'
+  },
+  {
+    id: 'p-prev-4',
+    date: '2026-07-07',
+    flow: 'None',
+    symptoms: ['Mood Swings', 'Fatigue'],
+    notes: 'Previous cycle Day 26 PMS.'
   }
 ];
 

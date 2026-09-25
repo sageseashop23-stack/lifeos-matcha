@@ -84,3 +84,5 @@ export interface CycleSettings {
   isIrregular?: boolean;
 }
 
+export type HeatmapMetricMode = 'mood' | 'productivity' | 'quality' | 'cycle';
+

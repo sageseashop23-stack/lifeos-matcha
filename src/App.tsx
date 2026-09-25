@@ -16,7 +16,7 @@ import LookingBackModule from './components/LookingBackModule';
 import { 
   Sparkles, Shield, Database, Calendar as CalendarIcon, 
   BookOpen, Star, HelpCircle, Heart, CheckCircle2, CloudLightning,
-  Lock, Unlock, Key, Eye, EyeOff, AlertCircle, Plus, TrendingUp
+  Lock, Unlock, Key, Eye, EyeOff, AlertCircle, Plus, TrendingUp, ArrowUpDown
 } from 'lucide-react';
 
 export default function App() {
@@ -126,6 +126,25 @@ export default function App() {
   const [showSettings, setShowSettings] = useState(false);
   const [activeTab, setActiveTab] = useState<'journal' | 'calendar' | 'looking_back'>('journal');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+
+  // Workspace dual-pane pane position order
+  const [workspaceOrder, setWorkspaceOrder] = useState<'calendar-first' | 'journal-first'>(() => {
+    try {
+      const saved = localStorage.getItem('lifeos_workspace_pane_order');
+      if (saved === 'calendar-first' || saved === 'journal-first') return saved;
+    } catch (e) {}
+    return 'calendar-first';
+  });
+
+  const toggleWorkspaceOrder = () => {
+    setWorkspaceOrder(prev => {
+      const next = prev === 'calendar-first' ? 'journal-first' : 'calendar-first';
+      try {
+        localStorage.setItem('lifeos_workspace_pane_order', next);
+      } catch (e) {}
+      return next;
+    });
+  };
 
   // Customizable sub-headline state
   const [subHeadline, setSubHeadline] = useState<string>(() => {
@@ -689,43 +708,108 @@ export default function App() {
               />
             ) : (
               <div className="flex flex-col gap-6 lg:gap-8 items-start w-full">
-                {/* Calendar Pane (Top) */}
-                <div className={`w-full min-w-0 ${activeTab !== 'calendar' ? 'hidden xl:block' : ''}`}>
-                  <CalendarModule
-                    contentItems={contentItems}
-                    socialEvents={socialEvents}
-                    evidenceDeliverables={evidenceDeliverables}
-                    selectedDate={selectedDate}
-                    onSelectDate={setSelectedDate}
-                    onAddContentItem={handleAddContentItem}
-                    onAddSocialEvent={handleAddSocialEvent}
-                    onAddEvidenceDeliverable={handleAddEvidenceDeliverable}
-                    onUpdateContentItem={handleUpdateContentItem}
-                    onUpdateSocialEvent={handleUpdateSocialEvent}
-                    onUpdateEvidenceDeliverable={handleUpdateEvidenceDeliverable}
-                    onDeleteContentItem={handleDeleteContentItem}
-                    onDeleteSocialEvent={handleDeleteSocialEvent}
-                    onDeleteEvidenceDeliverable={handleDeleteEvidenceDeliverable}
-                    periodLogs={periodLogs}
-                    cycleSettings={cycleSettings}
-                    journalEntries={journalEntries}
-                  />
+                {/* Swap Layout Button for XL dual-pane mode */}
+                <div className="hidden xl:flex items-center justify-between w-full bg-white/70 border border-matcha-primary/15 rounded-2xl px-4 py-2 text-xs font-mono text-[#5D524F]/70 shadow-xs backdrop-blur-xs">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-matcha-primary animate-pulse" />
+                    <span className="font-semibold text-[#5D524F]">Workspace Dual-Pane Mode:</span>
+                    <span className="text-[11px] bg-[#FAF0EC] px-2 py-0.5 rounded-md font-bold text-[#5D524F]">
+                      {workspaceOrder === 'calendar-first' ? '1. Calendar (Top)  →  2. Journal (Bottom)' : '1. Journal (Top)  →  2. Calendar (Bottom)'}
+                    </span>
+                  </div>
+                  <button
+                    onClick={toggleWorkspaceOrder}
+                    className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-white hover:bg-[#FAF0EC] text-matcha-primary hover:text-ink-dark border border-matcha-primary/20 shadow-2xs font-bold transition-all cursor-pointer"
+                    title="Swap positions of Calendar and Journal panes anytime"
+                  >
+                    <ArrowUpDown className="w-3.5 h-3.5" />
+                    <span>Swap Pane Positions</span>
+                  </button>
                 </div>
 
-                {/* Journal Pane (Bottom) */}
-                <div className={`w-full shrink-0 ${activeTab !== 'journal' ? 'hidden xl:block' : ''}`}>
-                  <JournalModule
-                    entries={journalEntries}
-                    onAddEntry={handleAddJournalEntry}
-                    onDeleteEntry={handleDeleteJournalEntry}
-                    selectedDate={selectedDate}
-                    periodLogs={periodLogs}
-                    cycleSettings={cycleSettings}
-                    onSavePeriodLog={handleSavePeriodLog}
-                    onDeletePeriodLog={handleDeletePeriodLog}
-                    onUpdateCycleSettings={setCycleSettings}
-                  />
-                </div>
+                {workspaceOrder === 'calendar-first' ? (
+                  <>
+                    {/* Calendar Pane */}
+                    <div className={`w-full min-w-0 ${activeTab !== 'calendar' ? 'hidden xl:block' : ''}`}>
+                      <CalendarModule
+                        contentItems={contentItems}
+                        socialEvents={socialEvents}
+                        evidenceDeliverables={evidenceDeliverables}
+                        selectedDate={selectedDate}
+                        onSelectDate={setSelectedDate}
+                        onAddContentItem={handleAddContentItem}
+                        onAddSocialEvent={handleAddSocialEvent}
+                        onAddEvidenceDeliverable={handleAddEvidenceDeliverable}
+                        onUpdateContentItem={handleUpdateContentItem}
+                        onUpdateSocialEvent={handleUpdateSocialEvent}
+                        onUpdateEvidenceDeliverable={handleUpdateEvidenceDeliverable}
+                        onDeleteContentItem={handleDeleteContentItem}
+                        onDeleteSocialEvent={handleDeleteSocialEvent}
+                        onDeleteEvidenceDeliverable={handleDeleteEvidenceDeliverable}
+                        periodLogs={periodLogs}
+                        cycleSettings={cycleSettings}
+                        journalEntries={journalEntries}
+                      />
+                    </div>
+
+                    {/* Journal Pane */}
+                    <div className={`w-full shrink-0 ${activeTab !== 'journal' ? 'hidden xl:block' : ''}`}>
+                      <JournalModule
+                        entries={journalEntries}
+                        onAddEntry={handleAddJournalEntry}
+                        onDeleteEntry={handleDeleteJournalEntry}
+                        selectedDate={selectedDate}
+                        periodLogs={periodLogs}
+                        cycleSettings={cycleSettings}
+                        onSavePeriodLog={handleSavePeriodLog}
+                        onDeletePeriodLog={handleDeletePeriodLog}
+                        onUpdateCycleSettings={setCycleSettings}
+                        onSelectDate={setSelectedDate}
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    {/* Journal Pane */}
+                    <div className={`w-full shrink-0 ${activeTab !== 'journal' ? 'hidden xl:block' : ''}`}>
+                      <JournalModule
+                        entries={journalEntries}
+                        onAddEntry={handleAddJournalEntry}
+                        onDeleteEntry={handleDeleteJournalEntry}
+                        selectedDate={selectedDate}
+                        periodLogs={periodLogs}
+                        cycleSettings={cycleSettings}
+                        onSavePeriodLog={handleSavePeriodLog}
+                        onDeletePeriodLog={handleDeletePeriodLog}
+                        onUpdateCycleSettings={setCycleSettings}
+                        onSelectDate={setSelectedDate}
+                      />
+                    </div>
+
+                    {/* Calendar Pane */}
+                    <div className={`w-full min-w-0 ${activeTab !== 'calendar' ? 'hidden xl:block' : ''}`}>
+                      <CalendarModule
+                        contentItems={contentItems}
+                        socialEvents={socialEvents}
+                        evidenceDeliverables={evidenceDeliverables}
+                        selectedDate={selectedDate}
+                        onSelectDate={setSelectedDate}
+                        onAddContentItem={handleAddContentItem}
+                        onAddSocialEvent={handleAddSocialEvent}
+                        onAddEvidenceDeliverable={handleAddEvidenceDeliverable}
+                        onUpdateContentItem={handleUpdateContentItem}
+                        onUpdateSocialEvent={handleUpdateSocialEvent}
+                        onUpdateEvidenceDeliverable={handleUpdateEvidenceDeliverable}
+                        onDeleteContentItem={handleDeleteContentItem}
+                        onDeleteSocialEvent={handleDeleteSocialEvent}
+                        onDeleteEvidenceDeliverable={handleDeleteEvidenceDeliverable}
+                        periodLogs={periodLogs}
+                        cycleSettings={cycleSettings}
+                        journalEntries={journalEntries}
+                      />
+                    </div>
+                  </>
+                )}
               </div>
             )}
           </div>

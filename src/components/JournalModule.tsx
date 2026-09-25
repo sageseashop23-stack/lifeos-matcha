@@ -4,8 +4,9 @@ import { JournalEntry, PeriodLog, CycleSettings, PeriodFlow } from '../types';
 import { getCycleInfoForDate, calculateCycleCorrelation, CyclePhase } from '../utils/cycleUtils';
 import { 
   BookOpen, Calendar as CalendarIcon, Search, Tag, Image, Smile, Trash2, Plus, Clock, BarChart3,
-  HeartPulse, Sliders, Info, Activity, Moon, Sparkles, AlertCircle
+  HeartPulse, Sliders, Info, Activity, Moon, Sparkles, AlertCircle, Flame
 } from 'lucide-react';
+import CycleHeatmapMatrix from './CycleHeatmapMatrix';
 import { 
   ResponsiveContainer, 
   XAxis, 
@@ -110,6 +111,7 @@ interface JournalModuleProps {
   onSavePeriodLog: (log: Omit<PeriodLog, 'id'>) => void;
   onDeletePeriodLog: (date: string) => void;
   onUpdateCycleSettings: (settings: CycleSettings) => void;
+  onSelectDate?: (date: string) => void;
 }
 
 
@@ -134,7 +136,8 @@ export default function JournalModule({
   cycleSettings,
   onSavePeriodLog,
   onDeletePeriodLog,
-  onUpdateCycleSettings
+  onUpdateCycleSettings,
+  onSelectDate
 }: JournalModuleProps) {
   const DEFAULT_MOODS = [
     '🌸 Serene',
@@ -210,7 +213,7 @@ export default function JournalModule({
   };
 
   // Cycle & Period logging and tab states
-  const [activeTab, setActiveTab] = useState<'mood' | 'cycle' | 'correlation' | 'trends'>('mood');
+  const [activeTab, setActiveTab] = useState<'mood' | 'cycle' | 'correlation' | 'trends' | 'heatmap'>('mood');
   const [showSettingsForm, setShowSettingsForm] = useState(false);
   const [tempCycleLength, setTempCycleLength] = useState(cycleSettings.cycleLength);
   const [tempPeriodLength, setTempPeriodLength] = useState(cycleSettings.periodLength);
@@ -664,7 +667,7 @@ export default function JournalModule({
           {/* Left Column (5 cols): Analytics Tabs & New Entry Creation */}
           <div className="lg:col-span-5 space-y-6">
             {/* Analytics & Cycle Section Tabs */}
-        <div className="bg-[#FAF0EC]/60 border border-matcha-primary/20 rounded-xl p-4 space-y-4 shadow-xs xl:hidden">
+        <div className="bg-[#FAF0EC]/60 border border-matcha-primary/20 rounded-xl p-4 space-y-4 shadow-xs">
           {/* Tab Navigation */}
           <div className="flex border-b border-matcha-primary/10 pb-2 gap-2 text-xs font-semibold overflow-x-auto scrollbar-none">
             <button
@@ -693,6 +696,19 @@ export default function JournalModule({
               {currentPeriodLog && currentPeriodLog.flow !== 'None' && (
                 <span className="w-1.5 h-1.5 bg-rose-500 rounded-full animate-pulse" />
               )}
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('heatmap')}
+              className={`pb-2 px-1 border-b-2 transition-all cursor-pointer flex items-center gap-1 shrink-0 ${
+                activeTab === 'heatmap'
+                  ? 'border-rose-500 text-rose-700 font-bold'
+                  : 'border-transparent text-[#5D524F]/60 hover:text-[#5D524F]'
+              }`}
+            >
+              <Flame className="w-3.5 h-3.5 text-rose-500" />
+              <span>Symptom Heatmap</span>
+              <span className="text-[8px] bg-rose-100 text-rose-800 font-bold px-1 rounded-full uppercase">Matrix</span>
             </button>
             <button
               type="button"
@@ -1646,6 +1662,19 @@ export default function JournalModule({
                   </div>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* TAB CONTENT: Symptom-by-Cycle-Day Heatmap Matrix */}
+          {activeTab === 'heatmap' && (
+            <div className="space-y-4 animate-in fade-in duration-200">
+              <CycleHeatmapMatrix
+                periodLogs={periodLogs}
+                cycleSettings={cycleSettings}
+                journalEntries={entries}
+                selectedDate={selectedDate}
+                onSelectDate={onSelectDate}
+              />
             </div>
           )}
         </div>

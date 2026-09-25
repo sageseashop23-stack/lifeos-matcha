@@ -543,6 +543,22 @@ export default function App() {
                 <Key className="w-4 h-4" />
                 <span>Unlock Sanctuary</span>
               </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  // Allow instant reset / bypass so user is never locked out
+                  const updatedConfig = { ...syncConfig, password: '' };
+                  setSyncConfig(updatedConfig);
+                  localStorage.setItem('lifeos_sync_config', JSON.stringify(updatedConfig));
+                  sessionStorage.removeItem('lifeos_session_authenticated');
+                  setIsAuthenticated(true);
+                  setPasswordError('');
+                }}
+                className="w-full text-center text-[11px] text-[#5D524F]/60 hover:text-matcha-primary transition-colors cursor-pointer py-1 font-mono"
+              >
+                Forgot or remove password? Click here to unlock & disable
+              </button>
             </form>
 
             {/* Helpful Hint Footer */}
